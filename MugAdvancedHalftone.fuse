@@ -1,0 +1,1750 @@
+--[[--
+Mug Advanced Halftone
+
+MIT License
+Copyright (c) 2026 Mug Lab
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+--]] --
+
+-- Set this to true to export CellInfo1-2 as additional outputs for debugging
+ShowCellInfo = false
+
+-- Set version globally for easy maintenance
+VERSION = 1.81
+
+--******************************************************************************************************
+FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
+    REGS_Category          = "Fuses\\Mug",
+    REGS_OpIconString      = "MAH",
+    REGS_OpDescription     = "Mug Advanced Halftone",
+    REGS_HelpTopic         = "https://x.com/MugLab3",
+    REGS_URL               = "https://www.youtube.com/@MugLabVideoEditing",
+    REGS_IconID            = "Icons.Tools.Icons.AdvancedHalftone",
+    REG_Source_GlobalCtrls = true,
+    REG_Source_SizeCtrls   = true,
+    REG_Version            = VERSION,
+})
+
+-- Palette Mapping Types
+PALETTE_TYPE = {
+    NONE = 0,
+    LUMA = 1,             -- Luminance-based mapping (4-16 colors)
+    RGB = 2,              -- 3-bit RGB color cuboid (8 colors)
+    NEAREST_NEIGHBOR = 3, -- Perceptual nearest neighbor matching (16-32 colors)
+}
+
+-- Definition of Retro Color Themes (Palettes + Thresholds)
+-- Each theme defines:
+--   Name: UI Dropdown name
+--   Paper: Default background (R,G,B) or nil (no change)
+--   PaletteType: Constant from PALETTE_TYPE table
+--   Palette: Array of colors (R,G,B) or (R,G,B,A) for the theme.
+ColorThemes = {
+    { Name = "Off", Paper = nil, PaletteType = PALETTE_TYPE.NONE, Palette = {} },
+    {
+        Name = "16 Colors (Fantasy Console)",
+        Paper = nil,
+        PaletteType = PALETTE_TYPE.NEAREST_NEIGHBOR,
+        Palette = {
+            { 0.00, 0.00, 0.00 }, { 0.11, 0.17, 0.33 }, { 0.49, 0.15, 0.33 }, { 0.00, 0.53, 0.32 },
+            { 0.67, 0.32, 0.21 }, { 0.37, 0.34, 0.31 }, { 0.76, 0.77, 0.78 }, { 1.00, 0.95, 0.91 },
+            { 1.00, 0.00, 0.30 }, { 1.00, 0.64, 0.00 }, { 1.00, 0.93, 0.15 }, { 0.00, 0.89, 0.21 },
+            { 0.16, 0.68, 1.00 }, { 0.51, 0.46, 0.61 }, { 1.00, 0.47, 0.66 }, { 1.00, 0.80, 0.67 }
+        }
+    },
+    {
+        Name = "32 Colors (Artisan Classic)",
+        Paper = nil,
+        PaletteType = PALETTE_TYPE.NEAREST_NEIGHBOR,
+        Palette = {
+            { 0.00, 0.00, 0.00 }, { 0.13, 0.13, 0.20 }, { 0.27, 0.16, 0.24 }, { 0.40, 0.22, 0.19 },
+            { 0.56, 0.34, 0.23 }, { 0.87, 0.44, 0.15 }, { 0.85, 0.63, 0.40 }, { 0.93, 0.76, 0.60 },
+            { 0.98, 0.95, 0.21 }, { 0.60, 0.90, 0.31 }, { 0.42, 0.75, 0.19 }, { 0.22, 0.58, 0.43 },
+            { 0.29, 0.41, 0.18 }, { 0.32, 0.29, 0.14 }, { 0.20, 0.24, 0.22 }, { 0.25, 0.25, 0.45 },
+            { 0.19, 0.38, 0.51 }, { 0.36, 0.43, 0.88 }, { 0.39, 0.61, 1.00 }, { 0.37, 0.80, 0.89 },
+            { 0.80, 0.86, 0.99 }, { 1.00, 1.00, 1.00 }, { 0.61, 0.68, 0.72 }, { 0.52, 0.49, 0.53 },
+            { 0.41, 0.42, 0.42 }, { 0.35, 0.34, 0.32 }, { 0.46, 0.26, 0.54 }, { 0.67, 0.20, 0.20 },
+            { 0.85, 0.34, 0.39 }, { 0.84, 0.48, 0.73 }, { 0.56, 0.59, 0.29 }, { 0.54, 0.44, 0.19 }
+        }
+    },
+    {
+        Name = "Theme: Retro Handheld (G)",
+        Paper = { 0.60, 0.74, 0.05 },
+        PaletteType = PALETTE_TYPE.LUMA,
+        Palette = {
+            { 0.06, 0.22, 0.06 }, -- Darkest
+            { 0.19, 0.38, 0.19 }, -- Dark
+            { 0.55, 0.75, 0.44 }, -- Light
+            { 0.60, 0.74, 0.05 }, -- Lightest
+        }
+    },
+    {
+        Name = "Theme: Retro Handheld (S)",
+        Paper = { 0.85, 0.85, 0.85 },
+        PaletteType = PALETTE_TYPE.LUMA,
+        Palette = {
+            { 0.18, 0.18, 0.18 },
+            { 0.40, 0.40, 0.40 },
+            { 0.66, 0.66, 0.66 },
+            { 0.85, 0.85, 0.85 },
+        }
+    },
+    {
+        Name = "Theme: Vintage PC 4c",
+        Paper = { 0.0, 0.0, 0.0 },
+        PaletteType = PALETTE_TYPE.LUMA, -- Simplest mapping for 4-color PC
+        Palette = {
+            { 0.0, 0.0, 0.0 },  -- Black
+            { 1.0, 0.33, 1.0 }, -- Magenta
+            { 0.33, 1.0, 1.0 }, -- Cyan
+            { 1.0, 1.0, 1.0 },  -- White
+        }
+    },
+    {
+        Name = "Theme: Vintage PC 4c (0)",
+        Paper = { 0.00, 0.00, 0.00 },
+        PaletteType = PALETTE_TYPE.NEAREST_NEIGHBOR,
+        Palette = {
+            { 0.00, 0.00, 0.00 }, -- Black
+            { 0.00, 0.67, 0.00 }, -- Green
+            { 0.67, 0.00, 0.00 }, -- Red
+            { 0.67, 0.33, 0.00 }, -- Brown/Orange
+        }
+    },
+    {
+        Name = "Theme: 80s Computer",
+        Paper = { 0.42, 0.42, 0.42 },
+        PaletteType = PALETTE_TYPE.NEAREST_NEIGHBOR,
+        Palette = {
+            { 0.00, 0.00, 0.00 }, -- 0: Black
+            { 1.00, 1.00, 1.00 }, -- 1: White
+            { 0.70, 0.25, 0.20 }, -- 2: Red
+            { 0.44, 0.72, 0.74 }, -- 3: Cyan
+            { 0.55, 0.27, 0.65 }, -- 4: Purple
+            { 0.35, 0.65, 0.35 }, -- 5: Green
+            { 0.24, 0.20, 0.65 }, -- 6: Blue
+            { 0.95, 0.95, 0.45 }, -- 7: Yellow
+            { 0.75, 0.45, 0.25 }, -- 8: Orange (More vibrant than Pepto)
+            { 0.31, 0.24, 0.00 }, -- 9: Brown
+            { 0.90, 0.55, 0.50 }, -- 10: Light Red
+            { 0.31, 0.31, 0.31 }, -- 11: Dark Grey
+            { 0.47, 0.47, 0.47 }, -- 12: Grey
+            { 0.67, 0.94, 0.67 }, -- 13: Light Green
+            { 0.63, 0.59, 1.00 }, -- 14: Light Blue
+            { 0.61, 0.61, 0.61 }, -- 15: Light Grey
+        }
+    },
+    {
+        Name = "Theme: 80s Arcade Pop",
+        Paper = { 0.10, 0.10, 0.15 }, -- Deep night blue / dark
+        PaletteType = PALETTE_TYPE.NEAREST_NEIGHBOR,
+        Palette = {
+            -- High-saturation "Pop" palette (NES/Arcade style)
+            { 0.00, 0.00, 0.00 }, { 1.00, 1.00, 1.00 }, { 1.00, 0.00, 0.00 }, { 0.00, 1.00, 1.00 },
+            { 1.00, 0.00, 1.00 }, { 0.00, 1.00, 0.00 }, { 0.00, 0.00, 1.00 }, { 1.00, 1.00, 0.00 },
+            { 1.00, 0.50, 0.00 }, { 0.50, 0.25, 0.00 }, { 1.00, 0.50, 0.50 }, { 1.00, 0.90, 0.00 },
+            { 0.00, 1.00, 0.50 }, { 0.50, 0.50, 1.00 }, { 1.00, 0.00, 0.50 }, { 0.50, 1.00, 1.00 }
+        }
+    },
+    {
+        Name = "Theme: ZX Spectrum",
+        Paper = { 0.80, 0.80, 0.80 },
+        PaletteType = PALETTE_TYPE.NEAREST_NEIGHBOR,
+        Palette = {
+            { 0.00, 0.00, 0.00 }, { 0.00, 0.00, 0.84 }, { 0.84, 0.00, 0.00 }, { 0.84, 0.00, 0.84 },
+            { 0.00, 0.84, 0.00 }, { 0.00, 0.84, 0.84 }, { 0.84, 0.84, 0.00 }, { 0.84, 0.84, 0.84 },
+            { 0.00, 0.00, 1.00 }, { 1.00, 0.00, 0.00 }, { 1.00, 0.00, 1.00 }, { 0.00, 1.00, 0.00 },
+            { 0.00, 1.00, 1.00 }, { 1.00, 1.00, 0.00 }, { 1.00, 1.00, 1.00 }
+        }
+    },
+    {
+        Name = "Theme: Tokyo Night",
+        Paper = { 0.02, 0.02, 0.05 }, -- Extremely Dark Navy (Almost Black)
+        PaletteType = PALETTE_TYPE.NEAREST_NEIGHBOR,
+        Palette = {
+            { 0.00, 0.00, 0.10 }, -- Deep Dark Blue (Base)
+            { 1.00, 0.05, 0.50 }, -- Vibrant Neon Pink
+            { 0.00, 1.00, 0.90 }, -- Electric Cyan
+            { 0.60, 0.10, 1.00 }, -- Bright Neon Purple
+            { 0.05, 0.00, 0.25 }, -- Low-key Night Blue
+            { 1.00, 1.00, 1.00 }, -- White Highlight
+        }
+    },
+    {
+        Name = "Theme: Newspaper",
+        Paper = { 0.85, 0.85, 0.75 },
+        PaletteType = PALETTE_TYPE.RGB,
+        Palette = {
+            -- Order: (R<<2) | (G<<1) | B 
+            { 0.15, 0.15, 0.15 }, -- 000: Black
+            { 0.15, 0.15, 0.75 }, -- 001: Blue
+            { 0.15, 0.85, 0.15 }, -- 010: Green
+            { 0.15, 0.85, 0.75 }, -- 011: Cyan
+            { 0.85, 0.15, 0.15 }, -- 100: Red
+            { 0.85, 0.15, 0.75 }, -- 101: Magenta
+            { 0.85, 0.85, 0.15 }, -- 110: Yellow
+            { 0.85, 0.85, 0.75 }, -- 111: White
+        }
+    },
+    {
+        Name = "Theme: Sepia Photograph",
+        Paper = { 0.95, 0.85, 0.70 },
+        PaletteType = PALETTE_TYPE.LUMA,
+        Palette = {
+            { 0.17, 0.10, 0.05 },
+            { 0.35, 0.22, 0.12 },
+            { 0.65, 0.50, 0.33 },
+            { 0.95, 0.85, 0.70 },
+        }
+    },
+    {
+        Name = "Theme: Blueprint",
+        Paper = { 0.80, 0.85, 0.95 },
+        PaletteType = PALETTE_TYPE.LUMA,
+        Palette = {
+            { 0.05, 0.15, 0.40 },
+            { 0.20, 0.40, 0.70 },
+            { 0.80, 0.85, 0.95 },
+        }
+    },
+    {
+        Name = "Theme: Green Phosphor",
+        Paper = { 0.00, 0.15, 0.00 },
+        PaletteType = PALETTE_TYPE.LUMA,
+        Palette = {
+            { 0.00, 0.15, 0.00 },
+            { 0.10, 0.55, 0.10 },
+            { 0.30, 0.95, 0.30 },
+        }
+    },
+    {
+        Name = "Theme: Amber Phosphor",
+        Paper = { 0.15, 0.05, 0.00 },
+        PaletteType = PALETTE_TYPE.LUMA,
+        Palette = {
+            { 0.15, 0.05, 0.00 },
+            { 0.60, 0.35, 0.00 },
+            { 1.00, 0.70, 0.00 },
+        }
+    },
+    {
+        Name = "Theme: LCD Calculator",
+        Paper = { 0.65, 0.70, 0.62 },
+        PaletteType = PALETTE_TYPE.LUMA,
+        Palette = {
+            { 0.25, 0.27, 0.25 },
+            { 0.65, 0.70, 0.62 },
+        }
+    },
+    {
+        Name = "Theme: Thermal Camera",
+        Paper = { 0.00, 0.00, 0.20 }, -- Deep Midnight Blue
+        PaletteType = PALETTE_TYPE.LUMA,
+        Palette = {
+            { 0.00, 0.00, 0.50 }, -- Dark Blue (Low)
+            { 0.30, 0.00, 0.60 }, -- Purple
+            { 0.80, 0.00, 0.40 }, -- Magenta/Red
+            { 1.00, 0.30, 0.00 }, -- Orange
+            { 1.00, 0.80, 0.00 }, -- Yellow
+            { 1.00, 1.00, 0.50 }, -- Light Yellow
+            { 1.00, 1.00, 1.00 }, -- White (High)
+        }
+    },
+    {
+        Name = "Theme: Thermal (Inverted)",
+        Paper = { 1.00, 1.00, 1.00 },
+        PaletteType = PALETTE_TYPE.LUMA,
+        Palette = {
+            { 1.00, 1.00, 1.00 }, -- White (Highest Heat -> Inverted)
+            { 1.00, 1.00, 0.50 },
+            { 1.00, 0.80, 0.00 },
+            { 1.00, 0.30, 0.00 },
+            { 0.80, 0.00, 0.40 },
+            { 0.30, 0.00, 0.60 },
+            { 0.00, 0.00, 0.50 }, -- Dark Blue (Lowest Heat -> Inverted)
+        }
+    },
+    {
+        Name = "Theme: Night Vision",
+        Paper = { 0.00, 0.20, 0.00 },
+        PaletteType = PALETTE_TYPE.LUMA,
+        Palette = {
+            { 0.00, 0.20, 0.00 },
+            { 0.10, 0.50, 0.10 },
+            { 0.30, 0.80, 0.30 },
+            { 0.70, 1.00, 0.70 },
+        }
+    },
+
+}
+
+-- Cell Information Calculation Parameters Structure
+CellInfoParams = [[
+  int srcSize[2];         // Source image size
+  int dstSize[2];         // Output grid size (number of cells)
+  float screenDensity;    // Screen density
+  float contrast;         // Contrast adjustment applied to sampled luminance
+  float aspectRatio;      // Dot aspect ratio
+  float dotGain;          // Dot gain effect (ink spread simulation)
+  float dotCurve;         // Dot size growth curve coefficient
+  float minDotRadius;     // Minimum dot radius to draw
+  float clipRadius;       // Maximum allowed dot radius (clipping radius)
+  float jitterPhase;      // Continuous noise phase for jitter (for smooth animation)
+  float positionJitter;   // Position jitter (random offset)
+  float sizeJitter;       // Size jitter (random scale variation)
+  float aspectJitter;     // Aspect ratio jitter (random ratio variation)
+  int invertMode;         // Subtractive mode switch (inverts how luminance maps to dot size)
+  float brightnessCutoff; // Brightness threshold for generating dots
+  int useOriginalColor;   // Whether to use the original input color for dots
+  float gridSpacingY;     // Base spacing multiplier for Y-axis grid
+  float gridStaggerX;     // X-axis offset multiplier for odd rows
+]]
+
+-- Cell Information Calculation Kernel
+-- Optimized Intermediate buffer format (2-texture consolidation):
+-- float4 cellInfo1 (Geometry):
+--   x: Cell Center X - Actual X position in pixel coordinates
+--   y: Cell Center Y - Actual Y position in pixel coordinates
+--   z: Dot Radius    - Calculated dot radius (0.0 to maxCellRadius)
+--   w: Final Aspect  - Local dot aspect ratio for this individual cell
+--
+-- float4 cellInfo2 (Color):
+--   x: Original Color R / Average Color R
+--   y: Original Color G / Average Color G
+--   z: Original Color B / Average Color B
+--   w: Original Color A / Mask Alpha
+--
+--
+-- * Note: In the rendering kernel, each pixel samples its enclosing cell and neighboring cells for accurate overlap rendering.
+CellInfoKernel = [[
+#define LUMA_R 0.3f
+#define LUMA_G 0.59f
+#define LUMA_B 0.11f
+#define SAMPLING_STEP_THRESHOLD 12.0f  // Increase step size for sampling radius larger than this value
+#define SAMPLING_STEP_LARGE 2          // Decimation rate (step size multiplier) for large radii
+
+// -- Helper Function: PCG Hash based 3D Hash Function
+// The rendering requires deterministic pseudo-random noise that matches exactly identically across 
+// different GPU APIs (CUDA, Metal, OpenCL, etc). Standard random implementations often drift due 
+// to floating-point precision differences across vendor hardware architectures.
+// Therefore, we use strictly integer-based bitwise operations for the initial high-entropy 
+// avalanching, before mathematically normalizing back into a -1.0 to 1.0 float space.
+__DEVICE__ float hash3D(uint x, uint y, uint z, uint seedOffset) {
+    // Strong non-linear hash to eliminate periodicity (Based on Jenkins Hash/PCG patterns)
+    // The seedOffset allows us to reuse the same function for Position, Size, and Aspect, 
+    // yielding completely uncorrelated noise fields for each property.
+    uint h = x + y * 374761393u + z * 668265263u + seedOffset;
+    h += h << 10;
+    h ^= h >> 6;
+    h += h << 3;
+    h ^= h >> 11;
+    h += h << 15;
+    
+    // Final mix (PCG style)
+    h = (h ^ (h >> 16)) * 2654435761u;
+    h = h ^ (h >> 16);
+    
+    return (float)(h & 0x00FFFFFF) * (1.0f / (float)0x00FFFFFF) * 2.0f - 1.0f;
+}
+
+__KERNEL__ void CellInfoKernel(
+    __CONSTANTREF__ CellInfoParams *params,
+    __TEXTURE2D__ src,
+    __TEXTURE2D_WRITE__ dst_info1,
+    __TEXTURE2D_WRITE__ dst_info2)
+{
+    DEFINE_KERNEL_ITERATORS_XY(x, y);
+
+    // Do not process out-of-bounds pixels
+    if (x >= params->dstSize[0] || y >= params->dstSize[1])
+        return;
+
+    const uint ux = (uint)x;
+    const uint uy = (uint)y;
+    
+    // Extract integer part (current/next frame) and fractional part (interpolation ratio) from Jitter Phase.
+    // This allows smoothly animating the random jitter by blending the calculated hash of the current 
+    // integer timeline phase and the next upcoming timeline phase.
+    const float phase = params->jitterPhase;
+    const float phaseBaseF = _floorf(phase);
+    const uint basePhase0 = (uint)phaseBaseF;
+    const uint basePhase1 = basePhase0 + 1;
+    
+    // Smoothstep curve (3t^2 - 2t^3) for seamless interpolation of random properties.
+    // Using a non-linear cubic curve prevents sudden velocity changes at integer keyframes.
+    const float fraction = phase - phaseBaseF;
+    const float t = fraction * fraction * (3.0f - 2.0f * fraction);
+
+    // For each random parameter, calculate values at the current and next integer phases, and linearly interpolate them using t
+    // Changing the seedOffset gives completely different random sequences for Position (X, Y), Size (S), and Aspect (Aspect)
+    const float randX0 = hash3D(ux, uy, basePhase0, 0u);
+    const float randX1 = hash3D(ux, uy, basePhase1, 0u);
+    const float randX = _mix(randX0, randX1, t);
+
+    const float randY0 = hash3D(ux, uy, basePhase0, 10007u);
+    const float randY1 = hash3D(ux, uy, basePhase1, 10007u);
+    const float randY = _mix(randY0, randY1, t);
+
+    const float randS0 = hash3D(ux, uy, basePhase0, 9973u);
+    const float randS1 = hash3D(ux, uy, basePhase1, 9973u);
+    const float randS = _mix(randS0, randS1, t);
+
+    const float randAspect0 = hash3D(ux, uy, basePhase0, 2191590403u);
+    const float randAspect1 = hash3D(ux, uy, basePhase1, 2191590403u);
+    const float randAspect = _mix(randAspect0, randAspect1, t);
+
+    // Fluctuation range of aspect ratio is symmetric vertically and horizontally (0.25x to 4.0x)
+    const float aspectMultiplier = _exp2f(params->aspectJitter * randAspect * 2.0f);
+    const float finalAspect = _fmaxf(0.01f, params->aspectRatio * aspectMultiplier);
+
+    // Dynamically calculate cell pitch/size on the GPU to reduce CPU overhead
+    const float width = (float)params->srcSize[0];
+    const float cellBasePitch = _fmaxf(3.0f, _floorf(width / params->screenDensity));
+    // Stretch or shrink the underlying coordinate grid to match the aspect ratio.
+    // Sampling logic squashes the distance checks appropriately.
+    const float gridAspect = params->aspectRatio;
+    float cx = cellBasePitch;
+    float cy = cellBasePitch * params->gridSpacingY; // Apply base vertical placement ratio driven from CPU
+
+    if (gridAspect > 1.0f) {
+        cx /= gridAspect; // Squish horizontal gaps for tall dots
+    } else if (gridAspect < 1.0f) {
+        cy *= gridAspect; // Squish vertical gaps for wide dots
+    }
+    const float cellPitchX = _fmaxf(3.0f, _floorf(cx));
+    const float cellPitchY = _fmaxf(3.0f, _floorf(cy));
+    const float2 cellPitch = to_float2(cellPitchX, cellPitchY);
+    const float halfPitchX = cellPitchX * 0.5f;
+    const float halfPitchY = cellPitchY * 0.5f;
+    const float maxCellRadius = (cellBasePitch * 0.5f) * 1.5f;
+
+    const float yOffset = halfPitchY;
+
+    // Calculate row offset based on multiplier matching dot shape (provided by CPU)
+    const int isOddRow = (y % 2 != 0) ? 1 : 0;
+    const float rowOffset = (isOddRow != 0) ? (-halfPitchX * params->gridStaggerX) : 0.0f;
+
+    // Calculate cell center in pixel coordinates and apply randomized position jitter
+    const float jitterAmountX = params->positionJitter * halfPitchX;
+    const float jitterAmountY = params->positionJitter * halfPitchY;
+
+    const float cellCenterX = ((float)x * cellPitchX) + halfPitchX + rowOffset + (randX * jitterAmountX);
+    const float cellCenterY = ((float)y * cellPitchY) + halfPitchY - yOffset + (randY * jitterAmountY);
+
+    // dst_info1: Store cell position information
+    const float4 cellInfo1 = to_float4((float)x, (float)y, cellCenterX, cellCenterY);
+
+    // Define sampling region around the cell to compute average luminance
+    const int samplingRadius = (int)(halfPitchX);
+    const float radiusSquared = (float)(samplingRadius * samplingRadius);
+
+    // Dynamic adjustment of sampling step size
+    const int sampleStep = ((float)samplingRadius > SAMPLING_STEP_THRESHOLD) ? SAMPLING_STEP_LARGE : 1;
+    const float sampleStepSquared = (float)(sampleStep * sampleStep); // Pre-calculated
+
+    float totalLuma = 0.0f;
+    int sampleCount = 0;
+    float4 avgColor = to_float4(0.0f, 0.0f, 0.0f, 0.0f);
+
+    // Compute loop bounds with image boundary checks for efficiency
+    const float fSamplingRadius = (float)samplingRadius;
+    const int minX = max(0, (int)(cellCenterX - fSamplingRadius));
+    const int maxX = min(params->srcSize[0] - 1, (int)(cellCenterX + fSamplingRadius));
+    const int minY = max(0, (int)(cellCenterY - fSamplingRadius));
+    const int maxY = min(params->srcSize[1] - 1, (int)(cellCenterY + fSamplingRadius));
+
+    // Early Return for invalid ranges to improve GPU thread utilization
+    if (minX > maxX || minY > maxY) {
+        _tex2DVec4Write(dst_info1, x, y, to_float4(cellCenterX, cellCenterY, 0.0f, finalAspect));
+        _tex2DVec4Write(dst_info2, x, y, to_float4(0.0f, 0.0f, 0.0f, 1.0f));
+        return;
+    }
+
+    // Sample pixels within the cell bounding box using circular sampling logic
+    const int sampleStepInt = sampleStep * sampleStep;
+
+    // Loop dynamically over the bounding box calculated from the cell center
+    for (int pixelY = minY; pixelY <= maxY; pixelY += sampleStep) {
+        const float dy = (float)pixelY - cellCenterY;
+        const float dySquared = dy * dy;
+
+        // Early vertical distance cutoff checking (Circular bound check)
+        // If the current row's perpendicular distance is already further than the radius, skip horizontal checks.
+        if (dySquared > radiusSquared) continue;
+
+        // Pre-calculate maximum horizontal range within the circular bounds
+        const float maxDxSq = radiusSquared - dySquared;
+        const float maxDx = _sqrtf(maxDxSq);
+        const int localMinX = max(minX, (int)(cellCenterX - maxDx));
+        const int localMaxX = min(maxX, (int)(cellCenterX + maxDx));
+
+        for (int pixelX = localMinX; pixelX <= localMaxX; pixelX += sampleStep) {
+            const float4 color = _tex2DVec4(src, (float)pixelX, (float)pixelY);
+
+            // Compute perceptual luminance
+            const float luma = color.x * LUMA_R + color.y * LUMA_G + color.z * LUMA_B;
+
+            // Accumulate luminance and color
+            totalLuma = _fmaf(luma, sampleStepSquared, totalLuma);
+            sampleCount += sampleStepInt;
+            avgColor += color * sampleStepSquared;
+        }
+    }
+
+    // Fast path execution if no valid samples were found
+    if (sampleCount == 0) {
+        _tex2DVec4Write(dst_info1, x, y, to_float4(cellCenterX, cellCenterY, 0.0f, 1.0f));
+        _tex2DVec4Write(dst_info2, x, y, to_float4(0.0f, 0.0f, 0.0f, 1.0f));
+        return;
+    }
+
+    // Calculate average luminance and color
+    const float invSampleCount = (sampleCount > 0) ? (1.0f / (float)sampleCount) : 0.0f;
+    float avgLuma = totalLuma * invSampleCount;
+
+    // Average color calculation
+    avgColor *= invSampleCount;
+
+    // Apply contrast enhancement
+    avgLuma = _fmaf(avgLuma - 0.5f, params->contrast, 0.5f);
+    avgLuma = _saturatef(avgLuma);  // Clamp between 0.0 and 1.0
+
+    const int invertMode = params->invertMode;
+
+    // Compute preliminary dot tonal strength based on luminance (Adjusts for invert mode)
+    float tonalValue = (invertMode != 0) ? avgLuma : (1.0f - avgLuma);
+
+    // Apply dot gain (ink spread simulation)
+    tonalValue = _saturatef(tonalValue + params->dotGain);
+
+    // Dot size curve correction (1.0 = linear)
+    if (params->dotCurve != 1.0f) {
+        const float curveFactor = _fmaxf(params->dotCurve, 1e-4f);
+        tonalValue = _powf(_saturatef(tonalValue), curveFactor);
+    }
+
+    // Batch process combined sizing operations: Brightness cutoff and minimum radius limit
+    // Apply local size jitter
+    const float sizeVariation = 1.0f + (randS * params->sizeJitter * 0.5f); // ±50% scale variation
+    tonalValue = _saturatef(tonalValue * sizeVariation);
+
+    const int passesBrightness = (invertMode != 0)
+        ? (avgLuma >= params->brightnessCutoff ? 1 : 0)
+        : (avgLuma <= params->brightnessCutoff ? 1 : 0);
+
+    float dotRadius = 0.0f;
+    if (passesBrightness && tonalValue >= params->minDotRadius) {
+        dotRadius = _fminf(tonalValue * maxCellRadius, maxCellRadius * params->clipRadius);
+    }
+
+    // Write final information to intermediate texture buffers
+    // dst_info1 (Geometry): [CenterX, CenterY, Radius, Aspect]
+    // dst_info2 (Color): [R, G, B, Alpha]
+    _tex2DVec4Write(dst_info1, x, y, to_float4(cellCenterX, cellCenterY, dotRadius, finalAspect));
+    _tex2DVec4Write(dst_info2, x, y, avgColor);
+}
+]]
+
+-- Rendering Parameters Structure
+RenderParams = [[
+  int srcSize[2];         // [0-1] 8 bytes - Input image size
+  int cellGridNum[2];     // [2-3] 8 bytes - Number of cell grids [X, Y] (Block 1: 16b aligned)
+  float paperColor[4];    // [4-7] 16 bytes - Paper color (Background) [R,G,B,A] (Block 2: 16b aligned)
+  float dotColor[4];      // [8-11] 16 bytes - Dot color (Foreground) [R,G,B,A] (Block 3: 16b aligned)
+  int useOriginalColor;   // [12] 4 bytes - Whether to use the original input color for dots
+  int colorReduction;     // [13] 4 bytes - Color reduction mode
+  float screenDensity;    // [14] 4 bytes - Screen density (calculates cell pitch on GPU)
+  int blendWithInput;     // [15] 4 bytes - Blend dots over input instead of paper (Block 4: 16b aligned)
+  int enableAntialias;    // [16] 4 bytes - Boolean flag: apply structural antialiasing
+  float aaEdgeWidth;      // [17] 4 bytes - Antialiasing edge blend width (in pixels)
+  int dotShape;           // [18] 4 bytes - Dot shape enum (0: Circle, 1: Square, 2: Diamond)
+  float aspectRatio;      // [19] 4 bytes - Dot aspect ratio (used for grid deformation) (Block 5: 16b aligned)
+  float rgbShift;         // [20] 4 bytes - Color plate misalignment strength (in pixels)
+  float gridSpacingY;     // [21] 4 bytes - Base spacing multiplier for Y-axis grid
+  float gridStaggerX;     // [22] 4 bytes - X-axis offset multiplier for odd rows
+  int mappingMode;        // [23] 4 bytes - 0: Off, 1: Luma (16 slots), 2: NearestNeighbor (Block 6: 16b aligned)
+  int paletteSize;        // [24] 4 bytes - Current number of active colors in palette
+  float lineAngle;        // [25] 4 bytes - Hatching line angle in degrees
+  float cellBasePitch;    // [26] 4 bytes - Base pitch for global pattern spacing
+  int _padding3;          // [27] 4 bytes - Alignment padding (Total 112 bytes - Perfect 16-byte boundary)
+  float themePalette[128]; // [28-155] 512 bytes - RGBA palette (Starts at 112b. Aligned.)
+]]
+
+RenderDotsKernel = [[
+// Constant definitions
+#define LUMA_R 0.3f
+#define LUMA_G 0.59f
+#define LUMA_B 0.11f
+
+__DEVICE__ float4 applyColorReduction(float4 color, int mode, __CONSTANTREF__ RenderParams *params) {
+    const int mappingMode = params->mappingMode;
+    if (mappingMode == 0) return color;
+
+    // Palette indexing
+    int bestIdx = 0;
+    
+    if (mappingMode == 1) { // Luma Mode
+        const float luma = color.x * LUMA_R + color.y * LUMA_G + color.z * LUMA_B;
+        bestIdx = (int)(_saturatef(luma) * 15.99f);
+    } else if (mappingMode == 2) { // Nearest Neighbor Mode
+        float minDelta = 1e10f;
+        const int count = params->paletteSize;
+        
+        // Cast the float[128] array to a float4 pointer for vectorized access
+        __CONSTANTREF__ float4 *palette = (__CONSTANTREF__ float4 *)params->themePalette;
+        
+        for (int i = 0; i < count; i++) {
+            const float4 p = palette[i];
+            
+            // Perceptual weighting factor (R:0.3, G:0.59, B:0.11)
+            const float dr = color.x - p.x;
+            const float dg = color.y - p.y;
+            const float db = color.z - p.z;
+            
+            const float delta = (dr * dr * 0.3f) + (dg * dg * 0.59f) + (db * db * 0.11f);
+            
+            if (delta < minDelta) {
+                minDelta = delta;
+                bestIdx = i;
+            }
+        }
+    }
+
+    __CONSTANTREF__ float4 *resPalette = (__CONSTANTREF__ float4 *)params->themePalette;
+    float4 res = resPalette[bestIdx];
+    res.w = color.w; // Preserve original alpha
+    return res;
+}
+#define DOT_RADIUS_THRESHOLD 0.1f
+#define BOUNDING_BOX_MARGIN 1.0f
+#define HIGH_DENSITY_THRESHOLD 100.0f  // Screen density threshold for fast-path
+#define MIN_CHECK_RADIUS 1.5f  // Minimum radius size necessary for comprehensive checking
+
+// Checks presence and geometry of a dot within a cell, returning coverage factor
+__DEVICE__ float checkCellDot(
+    const float2 cellPos,
+    const float2 pixelPos,
+    const float2 cellGridNum,
+    __TEXTURE2D__ cell_info1,
+    const float aaEdgeWidth,
+    const int dotShape,
+    __CONSTANTREF__ RenderParams *params,
+    const float cellBasePitch)
+{
+    if (cellPos.x >= 0.0f && cellPos.x < cellGridNum.x &&
+        cellPos.y >= 0.0f && cellPos.y < cellGridNum.y) {
+
+        const float2 cellUV = (cellPos + to_float2(0.5f, 0.5f)) / cellGridNum;
+
+        const float4 geoData = _tex2DVec4(cell_info1, cellUV.x, cellUV.y);
+        const float2 cellCenter = to_float2(geoData.x, geoData.y);
+        const float dotRadius = geoData.z;
+        const float finalAspect = geoData.w;
+
+        if (dotRadius <= 0.0f)
+            return 0.0f;
+
+        if (dotRadius <= DOT_RADIUS_THRESHOLD && aaEdgeWidth <= 0.0f)
+            return 0.0f;
+
+        float bbSize = dotRadius + BOUNDING_BOX_MARGIN + aaEdgeWidth;
+        // For line-based shapes, expand bounding box to allow continuous lines.
+        if (dotShape >= 3) bbSize = _fmaxf(bbSize, cellBasePitch * 1.5f);
+
+        const float2 diff = pixelPos - cellCenter;
+        const float2 absDiff = to_float2(_fabs(diff.x), _fabs(diff.y));
+
+        if (absDiff.x > bbSize || absDiff.y > bbSize)
+            return 0.0f;
+
+        // Scale distance to enforce aspect ratio constraints (Scaling inwards prevents dots from clipping out of bounds)
+        float2 measureDiff = absDiff;
+        if (finalAspect > 1.0f) {
+            measureDiff.x *= finalAspect; // Compress X-axis for tall dots
+        } else if (finalAspect < 1.0f) {
+            measureDiff.y *= _frecip(_fmaxf(0.01f, finalAspect)); // Compress Y-axis for wide dots
+        }
+
+        if (dotShape == 0) { // Circle
+            const float dist = _hypotf(measureDiff.x, measureDiff.y);
+            const float radiusSq = dotRadius * dotRadius;
+
+            if (aaEdgeWidth <= 0.0f) {
+                return (dist <= dotRadius) ? 1.0f : 0.0f;
+            }
+
+            if (dist >= dotRadius) return 0.0f;
+
+            const float innerR = _fmaxf(dotRadius - aaEdgeWidth, 0.0f);
+            if (dist <= innerR) return 1.0f;
+
+            return _saturatef((dotRadius - dist) / aaEdgeWidth);
+        } else if (dotShape == 1) { // Square
+            const float dist = _fmaxf(measureDiff.x, measureDiff.y);
+            if (aaEdgeWidth <= 0.0f) return (dist <= dotRadius) ? 1.0f : 0.0f;
+            if (dist >= dotRadius) return 0.0f;
+            if (dist <= _fmaxf(dotRadius - aaEdgeWidth, 0.0f)) return 1.0f;
+            return _saturatef((dotRadius - dist) / aaEdgeWidth);
+        } else if (dotShape == 2) { // Diamond
+            const float dist = (measureDiff.x + measureDiff.y) * 0.70710678f;
+            if (aaEdgeWidth <= 0.0f) return (dist <= dotRadius) ? 1.0f : 0.0f;
+            if (dist >= dotRadius) return 0.0f;
+            if (dist <= _fmaxf(dotRadius - aaEdgeWidth, 0.0f)) return 1.0f;
+            return _saturatef((dotRadius - dist) / aaEdgeWidth);
+        } else if (dotShape == 3 || dotShape == 4) { // Line or Crosshatch
+            // Global parallel line pattern
+            const float angleRad = params->lineAngle * (3.14159265f / 180.0f);
+            const float nx = _sinf(angleRad);
+            const float ny = -_cosf(angleRad);
+            
+            // Project pixel position onto the line normal for global phase
+            const float proj1 = _fmaf(pixelPos.x, nx, pixelPos.y * ny);
+            const float pitch = cellBasePitch;
+            
+            // Distance to global line center
+            const float phase1 = proj1 - _floorf(proj1 / pitch) * pitch;
+            const float dist1 = _fabs(phase1 - pitch * 0.5f);
+            
+            float coverage = 0.0f;
+            if (aaEdgeWidth <= 0.0f) {
+                coverage = (dist1 <= dotRadius) ? 1.0f : 0.0f;
+            } else {
+                if (dist1 < dotRadius) {
+                    coverage = _saturatef((dotRadius - dist1) / aaEdgeWidth);
+                }
+            }
+            
+            if (dotShape == 4) { // Crosshatch
+                const float nx2 = _cosf(angleRad);
+                const float ny2 = _sinf(angleRad);
+                const float proj2 = _fmaf(pixelPos.x, nx2, pixelPos.y * ny2);
+                const float phase2 = proj2 - _floorf(proj2 / pitch) * pitch;
+                const float dist2 = _fabs(phase2 - pitch * 0.5f);
+                
+                // Secondary hatch for shadows
+                const float maxR = pitch * 0.75f;
+                const float dotRatio = dotRadius / _fmaxf(0.01f, maxR);
+                const float dotRadius2 = _saturatef((dotRatio - 0.5f) * 2.0f) * maxR;
+
+                float coverage2 = 0.0f;
+                if (aaEdgeWidth <= 0.0f) {
+                    coverage2 = (dist2 <= dotRadius2) ? 1.0f : 0.0f;
+                } else {
+                    if (dist2 < dotRadius2) {
+                        coverage2 = _saturatef((dotRadius2 - dist2) / aaEdgeWidth);
+                    }
+                }
+                coverage = _fmaxf(coverage, coverage2);
+            }
+            return coverage;
+        }
+    }
+    return 0.0f;
+}
+
+
+// Neighbor cell relative offset definitions
+__DEVICE__ void getNeighborOffsets(const int isOddRow, const float gridStaggerX, float2 neighborOffsets[8], int *neighborCount)
+{
+    // Hexagonal grid layout
+    if (gridStaggerX != 0.0f) {
+        *neighborCount = 6;
+        const float offset = isOddRow != 0 ? -1.0f : 0.0f;
+        neighborOffsets[0] = to_float2(offset, -1.0f);
+        neighborOffsets[1] = to_float2(offset + 1.0f, -1.0f);
+        neighborOffsets[2] = to_float2( 1.0f,  0.0f);
+        neighborOffsets[3] = to_float2(offset + 1.0f,  1.0f);
+        neighborOffsets[4] = to_float2(offset,  1.0f);
+        neighborOffsets[5] = to_float2(-1.0f,  0.0f);
+    } else {
+        // Standard orthogonal grid
+        *neighborCount = 8;
+        neighborOffsets[0] = to_float2(-1.0f, -1.0f);
+        neighborOffsets[1] = to_float2( 0.0f, -1.0f);
+        neighborOffsets[2] = to_float2( 1.0f, -1.0f);
+        neighborOffsets[3] = to_float2( 1.0f,  0.0f);
+        neighborOffsets[4] = to_float2( 1.0f,  1.0f);
+        neighborOffsets[5] = to_float2( 0.0f,  1.0f);
+        neighborOffsets[6] = to_float2(-1.0f,  1.0f);
+        neighborOffsets[7] = to_float2(-1.0f,  0.0f);
+    }
+}
+
+// Alpha blend overlay function for computing dot coverage
+__DEVICE__ float4 blendDotOver(
+    const float4 baseColor,
+    const float4 dotColor,
+    const float coverage)
+{
+    const float blendFactor = _saturatef(dotColor.w * coverage);
+    if (blendFactor <= 0.0f)
+        return baseColor;
+
+    return to_float4(
+        baseColor.x * (1.0f - blendFactor) + dotColor.x * blendFactor,
+        baseColor.y * (1.0f - blendFactor) + dotColor.y * blendFactor,
+        baseColor.z * (1.0f - blendFactor) + dotColor.z * blendFactor,
+        _fmaxf(baseColor.w, blendFactor)
+    );
+}
+
+// --- [UPDATE_BEST_CELL Refactoring] ---
+// Holds state for tracking the best dot coverage and color.
+struct BestCellState {
+    float bestStrength;
+    float bestCoverage;
+    float4 bestDotColor;
+};
+
+// Evaluates a candidate cell and updates the best cell state.
+__DEVICE__ void updateBestCell(
+    const float2 candidatePos,
+    const float2 pixelPos,
+    const float2 cellGridNum,
+    __TEXTURE2D__ cell_info1,
+    __TEXTURE2D__ cell_info2,
+    const float aaEdgeWidth,
+    const int dotShape,
+    const float4 userDotColor,
+    const int useOriginalColorFlag,
+    const int colorReduction,
+    const int blendWithInput,
+    const float shiftVal,
+    const float2 cellShiftROFF,
+    const float2 cellShiftBOFF,
+    __CONSTANTREF__ RenderParams *params,
+    struct BestCellState *state,
+    const float cellBasePitch)
+{
+    const float coverageCandidate = checkCellDot(candidatePos, pixelPos, cellGridNum, cell_info1, aaEdgeWidth, dotShape, params, cellBasePitch);
+    if (coverageCandidate > 0.0f) {
+        float4 candidateDotColor = userDotColor;
+        float candidateStrength = coverageCandidate;
+        if (useOriginalColorFlag != 0) {
+            const float2 baseUV = (candidatePos + to_float2(0.5f, 0.5f)) / cellGridNum;
+            if (shiftVal == 0.0f) {
+                candidateDotColor = _tex2DVec4(cell_info2, baseUV.x, baseUV.y);
+            } else {
+                const float4 cR = _tex2DVec4(cell_info2, baseUV.x + cellShiftROFF.x, baseUV.y + cellShiftROFF.y);
+                const float4 cG = _tex2DVec4(cell_info2, baseUV.x, baseUV.y);
+                const float4 cB = _tex2DVec4(cell_info2, baseUV.x + cellShiftBOFF.x, baseUV.y + cellShiftBOFF.y);
+                candidateDotColor = to_float4(cR.x, cG.y, cB.z, cG.w);
+            }
+            if (colorReduction > 0) {
+                candidateDotColor = applyColorReduction(candidateDotColor, colorReduction, params);
+            }
+            // Enforce UI Alpha setting regardless of original image transparency
+            candidateDotColor.w = userDotColor.w;
+
+            const float candidateLuma = _fmaf(candidateDotColor.x, LUMA_R, _fmaf(candidateDotColor.y, LUMA_G, candidateDotColor.z * LUMA_B));
+            candidateStrength *= _fmaxf(1.0f - candidateLuma, 0.0f);
+        } else if (blendWithInput != 0) {
+            // If UseOriginalColor is off and BlendWithInput is on,
+            // we should not sample shifted input color to override the solid userDotColor,
+            // because it would shift a solid color unnaturally and break opacity mappings.
+        }
+        const float strengthDiff = candidateStrength - state->bestStrength;
+        if (strengthDiff > 1e-4f || (strengthDiff >= -1e-4f && coverageCandidate > state->bestCoverage)) {
+            state->bestStrength = candidateStrength;
+            state->bestCoverage = coverageCandidate;
+            state->bestDotColor = candidateDotColor;
+        }
+    }
+}
+
+
+__KERNEL__ void RenderDotsKernel(
+    __CONSTANTREF__ RenderParams *params,
+    __TEXTURE2D__ cell_info1,
+    __TEXTURE2D__ cell_info2,
+    __TEXTURE2D__ src_img,
+    __TEXTURE2D_WRITE__ dst)
+{
+    DEFINE_KERNEL_ITERATORS_XY(x, y);
+
+    if (x >= params->srcSize[0] || y >= params->srcSize[1])
+        return;
+
+    const float2 pixelPos = to_float2((float)x, (float)y);
+
+    // Compute cell dimensions
+    const float width = (float)params->srcSize[0];
+    const float cellBasePitch = _fmaxf(3.0f, _floorf(width / params->screenDensity));
+    // Distort entire grid resolution appropriately for the target aspect ratio
+    const float gridAspect = params->aspectRatio;
+    float cx = cellBasePitch;
+    float cy = cellBasePitch * params->gridSpacingY;
+    if (gridAspect > 1.0f) {
+        cx /= gridAspect;
+    } else if (gridAspect < 1.0f) {
+        cy *= gridAspect;
+    }
+    const float2 cellPitch = to_float2(_fmaxf(3.0f, _floorf(cx)), _fmaxf(3.0f, _floorf(cy)));
+
+    const float aaEdgeWidth = (params->enableAntialias != 0) ? params->aaEdgeWidth : 0.0f;
+
+    const float yOffset = cellPitch.y * 0.5f;
+    const float avgCellSize = (cellPitch.x + cellPitch.y) * 0.5f;
+    const int isHighDensity = avgCellSize < MIN_CHECK_RADIUS ? 1 : 0;
+
+    const int baseRowY = (int)((pixelPos.y + yOffset) / cellPitch.y);
+    const int isOddRow = (baseRowY % 2 != 0) ? 1 : 0;
+
+    const float2 halfCellPitch = cellPitch * 0.5f;
+
+    float adjustedX = pixelPos.x;
+    if (isOddRow != 0 && params->dotShape != 1) {
+        adjustedX += halfCellPitch.x;
+    }
+    const int mainCellX = (int)_floorf(adjustedX / cellPitch.x);
+    const int mainCellY = baseRowY;
+    const float2 mainCellPos = to_float2((float)mainCellX, (float)mainCellY);
+
+    const float2 cellGridNum = to_float2(
+        (float)params->cellGridNum[0],
+        (float)params->cellGridNum[1]
+    );
+
+    // Access paperColor and dotColor as float4 vectors
+    const float4 paperColor = *(__CONSTANTREF__ float4 *)params->paperColor;
+    const float4 userDotColor = *(__CONSTANTREF__ float4 *)params->dotColor;
+    const int useOriginalColorFlag = params->useOriginalColor;
+    const int colorReduction = params->colorReduction;
+
+    const float intWidth = (float)params->srcSize[0];
+    const float intHeight = (float)params->srcSize[1];
+    const int blendWithInput = params->blendWithInput > 0 ? 1 : 0;
+
+    // RGBShift offsets (Red goes Top-Left, Blue goes Bottom-Right, Green stays center)
+    const float shiftVal = (blendWithInput != 0 || useOriginalColorFlag != 0) ? params->rgbShift : 0.0f;
+    const float2 shiftROFF = to_float2(-shiftVal / intWidth, -shiftVal / intHeight);
+    const float2 shiftBOFF = to_float2( shiftVal / intWidth,  shiftVal / intHeight);
+    // Cell info UV shift amounts are identical to source image shifts.
+    const float2 cellShiftROFF = shiftROFF;
+    const float2 cellShiftBOFF = shiftBOFF;
+
+    float4 inputColor = paperColor;
+
+    if (blendWithInput != 0) {
+        const float px = (float)x / intWidth;
+        const float py = (float)y / intHeight;
+
+        if (shiftVal == 0.0f) {
+            inputColor = _tex2DVec4(src_img, px, py);
+        } else {
+            // Independent RGB offset sampling to simulate misaligned print plates
+            const float4 sR = _tex2DVec4(src_img, px + shiftROFF.x, py + shiftROFF.y);
+            const float4 sG = _tex2DVec4(src_img, px, py);
+            const float4 sB = _tex2DVec4(src_img, px + shiftBOFF.x, py + shiftBOFF.y);
+            inputColor = to_float4(sR.x, sG.y, sB.z, sG.w);
+        }
+        if (useOriginalColorFlag != 0 && colorReduction > 0) {
+            inputColor = applyColorReduction(inputColor, colorReduction, params);
+        }
+    }
+
+    struct BestCellState state;
+    state.bestCoverage = 0.0f;
+    state.bestStrength = -1.0f;
+    state.bestDotColor = (blendWithInput != 0 && useOriginalColorFlag != 0) ? inputColor : userDotColor;
+
+    updateBestCell(mainCellPos, pixelPos, cellGridNum, cell_info1, cell_info2, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, blendWithInput, shiftVal, cellShiftROFF, cellShiftBOFF, params, &state, cellBasePitch);
+
+    const float2 cellCenter = to_float2(
+        mainCellX * cellPitch.x + ((isOddRow != 0) ? (halfCellPitch.x * params->gridStaggerX) : 0.0f) + halfCellPitch.x,
+        mainCellY * cellPitch.y + halfCellPitch.y
+    );
+    
+    const float2 relPos = pixelPos - cellCenter;
+
+    float2 neighborOffsets[8];
+    int neighborCount = 0;
+    getNeighborOffsets(isOddRow, params->gridStaggerX, neighborOffsets, &neighborCount);
+
+    if (isHighDensity != 0) {
+        // High density rendering
+        int checkIndices[2] = {-1, -1};
+        int checkCount = 0;
+        const float2 cellThreshold = halfCellPitch * 0.5f; // Boundary threshold (quarter pitch)
+        const float2 absRelPos = to_float2(_fabs(relPos.x), _fabs(relPos.y));
+
+        if (absRelPos.x > cellThreshold.x) {
+            checkIndices[checkCount++] = (relPos.x > 0.0f) ? 2 : 5;
+        }
+
+        if (absRelPos.y > cellThreshold.y) {
+            if (params->gridStaggerX == 0.0f) {
+                checkIndices[checkCount++] = (relPos.y > 0.0f) ? 5 : 1; // Bottom or Top
+            } else {
+                checkIndices[checkCount++] = (relPos.y > 0.0f) ? (isOddRow ? 3 : 4)
+                                                              : (isOddRow ? 0 : 1);
+            }
+            if (checkCount > 2) checkCount = 2;
+        }
+
+        for (int i = 0; i < checkCount; i++) {
+            const int index = checkIndices[i];
+            if (index < 0) continue;
+            updateBestCell(mainCellPos + neighborOffsets[index], pixelPos, cellGridNum, cell_info1, cell_info2, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, blendWithInput, shiftVal, cellShiftROFF, cellShiftBOFF, params, &state, cellBasePitch);
+        }
+    } else {
+        for (int i = 0; i < neighborCount; i++) {
+            updateBestCell(mainCellPos + neighborOffsets[i], pixelPos, cellGridNum, cell_info1, cell_info2, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, blendWithInput, shiftVal, cellShiftROFF, cellShiftBOFF, params, &state, cellBasePitch);
+        }
+    }
+
+    if (state.bestCoverage > 0.0f) {
+        const float4 baseColor = (blendWithInput != 0) ? inputColor : paperColor;
+        const float4 finalColor = blendDotOver(baseColor, state.bestDotColor, state.bestCoverage);
+        _tex2DVec4Write(dst, x, y, finalColor);
+        return;
+    }
+
+    if (blendWithInput != 0) {
+        _tex2DVec4Write(dst, x, y, inputColor);
+    } else {
+        _tex2DVec4Write(dst, x, y, paperColor);
+    }
+}
+]]
+
+function Create()
+    local groupID = 0
+
+    self:BeginControlNest("Global", "Global", true);
+
+    InScreenDensity = self:AddInput("Screen Density", "ScreenDensity", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "SliderControl",
+        INP_Default = 200.0,
+        INP_MinAllowed = 1,
+        INP_MaxAllowed = 1000.0,
+        INPID_PreviewControl = "RangeControl",
+        INP_Integer = false,
+        INPS_StatusText = "Controls the density of the halftone pattern (similar to LPI in print)",
+    })
+
+    InContrast = self:AddInput("Contrast", "Contrast", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "SliderControl",
+        INP_Default = 0.0,
+        INP_MinAllowed = -1.0,
+        INP_MaxAllowed = 1.0,
+        INPS_StatusText = "Adjusts the contrast of the halftone pattern (-1.0 to 1.0 mapped to 0.25x to 4x)",
+    })
+    self:EndControlNest();
+
+    self:BeginControlNest("Dot Shape", "DotShapeNest", true);
+    InDotShape = self:AddInput("Dot Shape", "DotShape", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "ComboControl",
+        INP_Default = 0,
+        INP_Integer = true,
+        { CCS_AddString = "Circle" },
+        { CCS_AddString = "Square" },
+        { CCS_AddString = "Diamond" },
+        { CCS_AddString = "Line" },
+        { CCS_AddString = "Crosshatch" },
+        INP_DoNotifyChanged = true,
+        INPS_StatusText = "Select the shape of the halftone dots",
+    })
+
+    InStaggerSquareDots = self:AddInput("Stagger Square Dots", "StaggerSquareDots", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "CheckboxControl",
+        INP_Default = 1.0,
+        INP_Integer = true,
+        IC_Visible = false,
+        INPS_StatusText = "Applies a brick-like staggered layout to square dots",
+    })
+        
+    InLineAngle = self:AddInput("Line Angle", "LineAngle", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "SliderControl",
+        INP_Default = 45.0,
+        INP_MinScale = 0.0,
+        INP_MaxScale = 360.0,
+        IC_Visible = false,
+        INPS_StatusText = "Controls the angle of hatching lines",
+    })
+
+    InAspectRatio = self:AddInput("Dot Aspect Ratio", "AspectRatio", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "SliderControl",
+        INP_Default = 0.0,
+        INP_MinAllowed = -1.0,
+        INP_MaxAllowed = 1.0,
+        INPS_StatusText = "Adjusts the base aspect ratio of the dots (-1.0 to 1.0 mapped to 0.25x to 4x)",
+    })
+
+    InDotGain = self:AddInput("Dot Gain", "DotGain", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "SliderControl",
+        INP_Default = 0.00,
+        INP_MinAllowed = -1.0,
+        INP_MaxAllowed = 1.0,
+        INPS_StatusText = "Simulates ink spread on paper",
+    })
+
+    InDotSizeCurve = self:AddInput("Dot Size Curve", "DotSizeCurve", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "SliderControl",
+        INP_Default = 0.0,
+        INP_MinAllowed = -1.0,
+        INP_MaxAllowed = 1.0,
+        INPS_StatusText = "Adjusts the growth curve of dot sizes (-1.0 to 1.0 mapped to 0.25x to 4x)",
+    })
+
+    InCutoffDotRadius = self:AddInput("Cutoff Dot Radius", "MinDotRadius", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "SliderControl",
+        INP_Default = 0.05,
+        INP_MinAllowed = 0.0,
+        INP_MaxAllowed = 1.0,
+        INPS_StatusText = "Dots smaller than this radius are not drawn",
+    })
+
+    InClipDotRadius = self:AddInput("Clip Dot Radius", "ClipDotRadius", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "SliderControl",
+        INP_Default = 1.0,
+        INP_MinAllowed = 0.0,
+        INP_MaxAllowed = 1.0,
+        INPS_StatusText = "Controls the maximum size of dots in the halftone pattern",
+    })
+
+    InInvertMode = self:AddInput("Invert Brightness", "InvertMode", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "CheckboxControl",
+        INP_Default = 0.0,
+        INPS_StatusText = "When enabled, brighter areas of the image generate larger dots (Subtractive Mode)",
+    })
+
+    InBrightnessCutoff = self:AddInput("Brightness Cutoff", "BrightnessCutoff", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "SliderControl",
+        INP_Default = 0.75,
+        INP_MinAllowed = 0.0,
+        INP_MaxAllowed = 1.0,
+        INPS_StatusText = "Luminance threshold controlling where dots appear; behavior flips if Invert Brightness is enabled",
+    })
+
+    InEnableDotAntialias = self:AddInput("Enable Dot Antialias", "EnableDotAntialias", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "CheckboxControl",
+        INP_Default = 1.0,
+        INPS_StatusText = "Smooth dot edges when dots are very small",
+    })
+
+    InAAEdgeSoftness = self:AddInput("AA Edge Softness", "AAEdgeSoftness", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "SliderControl",
+        INP_Default = 0.15,
+        INP_MinAllowed = 0.0,
+        INP_MaxAllowed = 1.0,
+        INPS_StatusText = "Controls how wide the antialias region is around each dot",
+    })
+    self:EndControlNest();
+
+    self:BeginControlNest("Dot Jitter", "DotJitter", true);
+    InJitterPhase = self:AddInput("Jitter Noise Phase", "JitterPhase", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "SliderControl",
+        INP_Default = 0.0,
+        INP_Integer = false,
+        INP_MinAllowed = 0.0,
+        INPS_StatusText = "Smoothly evolves the random pattern used for all jitters",
+    })
+
+    InPositionJitter = self:AddInput("Position Jitter", "PositionJitter", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "SliderControl",
+        INP_Default = 0.0,
+        INP_MinAllowed = 0.0,
+        INP_MaxAllowed = 1.0,
+        INPS_StatusText = "Randomly shifts dot positions to simulate imperfect printing registration",
+    })
+
+    InSizeJitter = self:AddInput("Size Jitter", "SizeJitter", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "SliderControl",
+        INP_Default = 0.0,
+        INP_MinAllowed = 0.0,
+        INP_MaxAllowed = 1.0,
+        INPS_StatusText = "Randomly varies dot sizes to simulate ink bleed or paper texture irregularities",
+    })
+
+    InAspectJitter = self:AddInput("Aspect Jitter", "AspectJitter", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "SliderControl",
+        INP_Default = 0.0,
+        INP_MinAllowed = 0.0,
+        INP_MaxAllowed = 1.0,
+        INPS_StatusText = "Randomly varies the aspect ratio of each dot to simulate paper grain or print roller slippage",
+    })
+    self:EndControlNest();
+
+    self:BeginControlNest("Dot Color", "DotColorNest", true);
+    InRGBShift = self:AddInput("RGB Shift (Req. Orig Color/Blend)", "RGBShift", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "SliderControl",
+        INP_Default = 0.0,
+        INP_MinAllowed = 0.0,
+        INP_MaxAllowed = 20.0,
+        INPS_StatusText =
+        "Simulates color plate misalignment. Only active when 'Use Original Color' or 'Blend With Input' is enabled.",
+    })
+
+    InUseOriginalColor = self:AddInput("Use Original Color", "UseOriginalColor", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "CheckboxControl",
+        INP_Default = 0.0,
+        INP_DoNotifyChanged = true,
+        INPS_StatusText = "Preserves original colors instead of black and white",
+    })
+
+    local colorReductionConfig = {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "ComboControl",
+        INP_Default = 0.0,
+        INP_Integer = true,
+        INP_DoNotifyChanged = true,
+        INPS_StatusText = "Simulates retro color depths and hardware palettes",
+    }
+    for i, theme in ipairs(ColorThemes) do
+        table.insert(colorReductionConfig, { CCS_AddString = theme.Name })
+    end
+    InColorReduction = self:AddInput("Color Reduction", "ColorReduction", colorReductionConfig)
+    InColorReduction:SetAttrs({IC_Visible = false}) -- Hide by default since Use Original Color is 0.0
+
+    groupID = groupID + 1
+    InDotColorRed = self:AddInput("Dot Color Red", "DotColorRed", {
+        LINKID_DataType    = "Number",
+        INPID_InputControl = "ColorControl",
+        INP_MinScale       = 0.0,
+        INP_MaxScale       = 1.0,
+        INP_Default        = 0.0627,
+        ICS_Name           = "Color",
+        CLRC_ShowWheel     = false,
+        IC_ControlGroup    = groupID,
+        IC_ControlID       = 0, -- Red ID
+        INPS_StatusText    = "Sets the dot color (foreground)",
+    })
+
+    InDotColorGreen = self:AddInput("Dot Color Green", "DotColorGreen", {
+        LINKID_DataType    = "Number",
+        INPID_InputControl = "ColorControl",
+        INP_MinScale       = 0.0,
+        INP_MaxScale       = 1.0,
+        INP_Default        = 0.0156,
+        ICS_Name           = "Color",
+        CLRC_ShowWheel     = false,
+        IC_ControlGroup    = groupID,
+        IC_ControlID       = 1, -- Green ID
+        INPS_StatusText    = "Sets the dot color (foreground)",
+    })
+
+    InDotColorBlue = self:AddInput("Dot Color Blue", "DotColorBlue", {
+        LINKID_DataType    = "Number",
+        INPID_InputControl = "ColorControl",
+        INP_MinScale       = 0.0,
+        INP_MaxScale       = 1.0,
+        INP_Default        = 0.0,
+        ICS_Name           = "Color",
+        CLRC_ShowWheel     = false,
+        IC_ControlGroup    = groupID,
+        IC_ControlID       = 2, -- Blue ID
+        INPS_StatusText    = "Sets the dot color (foreground)",
+    })
+
+    InDotColorAlpha = self:AddInput("Dot Color Alpha", "DotColorAlpha", {
+        LINKID_DataType    = "Number",
+        INPID_InputControl = "ColorControl",
+        INP_MinScale       = 0.0,
+        INP_MaxScale       = 1.0,
+        INP_Default        = 1.0,
+        ICS_Name           = "Color",
+        CLRC_ShowWheel     = false,
+        IC_ControlGroup    = groupID,
+        IC_ControlID       = 3, -- Alpha ID
+        INPS_StatusText    = "Sets the dot color (foreground)",
+    })
+    self:EndControlNest()
+
+    self:BeginControlNest("Paper & Background", "Paper", true);
+
+    InBlendWithInput = self:AddInput("Blend With Input", "BlendWithInput", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "CheckboxControl",
+        INP_Default = 0.0,
+        INPS_StatusText = "Blend dots over the input image instead of using paper color",
+    })
+
+    InPaperColorPreset = self:AddInput("Paper Color Preset", "PaperColorPreset", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "ComboControl",
+        INP_Default = 0,
+        INP_Integer = true,
+        INP_DoNotifyChanged = true,
+        { CCS_AddString = "Custom" },
+        { CCS_AddString = "Pure White" },
+        { CCS_AddString = "Warm White" },
+        { CCS_AddString = "Cool White" },
+        { CCS_AddString = "Natural White" },
+        { CCS_AddString = "Cream" },
+        { CCS_AddString = "Ivory" },
+        { CCS_AddString = "Light Gray" },
+        { CCS_AddString = "Newspaper" },
+        { CCS_AddString = "Vintage" },
+        { CCS_AddString = "Kraft" },
+        { CCS_AddString = "Recycled" },
+        { CCS_AddString = "Light Blue" },
+        { CCS_AddString = "Light Green" },
+        { CCS_AddString = "Light Pink" },
+        { CCS_AddString = "Light Yellow" },
+        INPS_StatusText = "Select from common paper color presets",
+    })
+
+    groupID = groupID + 1
+    InPaperColorRed = self:AddInput("Paper Color Red", "PaperColorRed", {
+        LINKID_DataType    = "Number",
+        INPID_InputControl = "ColorControl",
+        INP_MinScale       = 0.0,
+        INP_MaxScale       = 1.0,
+        INP_Default        = 0.85,
+        ICS_Name           = "Color",
+        CLRC_ShowWheel     = false,
+        IC_ControlGroup    = groupID,
+        IC_ControlID       = 0, -- Red ID
+        INPS_StatusText    = "Sets the paper color (background)",
+    })
+
+    InPaperColorGreen = self:AddInput("Paper Color Green", "PaperColorGreen", {
+        LINKID_DataType    = "Number",
+        INPID_InputControl = "ColorControl",
+        INP_MinScale       = 0.0,
+        INP_MaxScale       = 1.0,
+        INP_Default        = 0.75,
+        ICS_Name           = "Color",
+        CLRC_ShowWheel     = false,
+        IC_ControlGroup    = groupID,
+        IC_ControlID       = 1, -- Green ID
+        INPS_StatusText    = "Sets the paper color (background)",
+    })
+
+    InPaperColorBlue = self:AddInput("Paper Color Blue", "PaperColorBlue", {
+        LINKID_DataType    = "Number",
+        INPID_InputControl = "ColorControl",
+        INP_MinScale       = 0.0,
+        INP_MaxScale       = 1.0,
+        INP_Default        = 0.58,
+        ICS_Name           = "Color",
+        CLRC_ShowWheel     = false,
+        IC_ControlGroup    = groupID,
+        IC_ControlID       = 2, -- Blue ID
+        INPS_StatusText    = "Sets the paper color (background)",
+    })
+
+    InPaperColorAlpha = self:AddInput("Paper Color Alpha", "PaperColorAlpha", {
+        LINKID_DataType    = "Number",
+        INPID_InputControl = "ColorControl",
+        INP_MinScale       = 0.0,
+        INP_MaxScale       = 1.0,
+        INP_Default        = 1.0,
+        ICS_Name           = "Color",
+        CLRC_ShowWheel     = false,
+        IC_ControlGroup    = groupID,
+        IC_ControlID       = 3, -- Alpha ID
+        INPS_StatusText    = "Sets the paper color (background)",
+    })
+    self:EndControlNest()
+
+    InImage = self:AddInput("Input Image", "Image", {
+        LINKID_DataType = "Image",
+        LINK_Main = 1,
+        INPS_StatusText = "Input image to be processed",
+    })
+
+    OutImage = self:AddOutput("Output", "Output", {
+        LINKID_DataType = "Image",
+        LINK_Main = 1,
+    })
+
+    if ShowCellInfo then
+        OutCellInfo1 = self:AddOutput("CellInfo1", "CellInfo1", {
+            LINKID_DataType = "Image",
+            LINK_Main = 2,
+        })
+        OutCellInfo2 = self:AddOutput("CellInfo2", "CellInfo2", {
+            LINKID_DataType = "Image",
+            LINK_Main = 3,
+        })
+    end
+
+    self:AddControlPage("About")
+    InGithub = self:AddInput("GitHub (Current: v" .. tostring(VERSION) .. ")", "Github", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "ButtonControl",
+        INP_DoNotifyChanged = true,
+        INP_External = false,
+    })
+    
+    self:AddInput("About", "AboutText", {
+        LINKID_DataType = "Text",
+        INPID_InputControl = "TextEditControl",
+        INP_External = false,
+        INP_Passive = true,
+        TEC_Wrap = true,
+        TEC_ReadOnly = true,
+        INPS_DefaultText = [[
+Mug Advanced Halftone v]] .. tostring(VERSION) .. [[
+--------------------------------------------------
+A high-performance halftone simulation Fuse for DaVinci Resolve.
+
+[Key Features]
+- Hexagonal Grid & Custom Shapes (Circle, Square, Diamond)
+- Global Pattern Line Hatching & Crosshatching
+- Professional Engraving Shadow Logic
+- Analog Jitter (Position, Size, Aspect)
+- Retro Hardware Color Themes & RGB Channel Shift
+- Fully GPU Accelerated (OpenCL/Metal/CUDA)
+
+[Updates & Support]
+- GitHub: https://github.com/mug-lab-3/mug-advanced-halftone
+- X: https://x.com/MugLab3
+- YouTube: https://www.youtube.com/@MugLab3
+
+Developed by Mug Lab.
+]],
+    })
+end
+
+function Process(req)
+    -- Make no changes and pass-through if no input image is found
+    local img = InImage:GetValue(req)
+    if img == nil then
+        OutImage:Set(req, nil)
+        return
+    end
+
+    -- Localization of frequently used functions
+    local floor = math.floor
+    local max = math.max
+    local pow = math.pow
+
+    local screenDensity = InScreenDensity:GetValue(req).Value
+    local rgbShift = InRGBShift:GetValue(req).Value
+    local contrast = pow(4.0, InContrast:GetValue(req).Value)
+
+    local aspectRatioSlider = InAspectRatio:GetValue(req).Value
+    local aspectRatio = pow(2.0, aspectRatioSlider * 2.0)
+    local lineAngle = InLineAngle:GetValue(req).Value
+    local dotGain = InDotGain:GetValue(req).Value
+    local dotSizeCurveSlider = InDotSizeCurve:GetValue(req).Value
+    local dotSizeCurve = pow(4.0, -dotSizeCurveSlider)
+    local cutoffDotRadius = InCutoffDotRadius:GetValue(req).Value
+    local maxDotRadius = InClipDotRadius:GetValue(req).Value
+    local jitterPhase = InJitterPhase:GetValue(req).Value
+    local positionJitter = InPositionJitter:GetValue(req).Value
+    local sizeJitter = InSizeJitter:GetValue(req).Value
+    local aspectJitter = InAspectJitter:GetValue(req).Value
+    local invertMode = InInvertMode:GetValue(req).Value
+    local brightnessCutoff = InBrightnessCutoff:GetValue(req).Value
+    local enableDotAntialias = InEnableDotAntialias:GetValue(req).Value > 0.5
+    local aaEdgeSoftness = InAAEdgeSoftness:GetValue(req).Value
+    local useOriginalColor = InUseOriginalColor:GetValue(req).Value > 0.5 and 1 or 0
+    local colorReduction = floor(InColorReduction:GetValue(req).Value + 0.5)
+    local blendWithInput = InBlendWithInput:GetValue(req).Value > 0.5 and 1 or 0
+    local dotShape = floor(InDotShape:GetValue(req).Value + 0.5)
+    local staggerSquares = InStaggerSquareDots:GetValue(req).Value > 0.5
+
+    -- Color Components
+    local paperR = InPaperColorRed:GetValue(req).Value
+    local paperG = InPaperColorGreen:GetValue(req).Value
+    local paperB = InPaperColorBlue:GetValue(req).Value
+    local paperA = InPaperColorAlpha:GetValue(req).Value
+    local dotR = InDotColorRed:GetValue(req).Value
+    local dotG = InDotColorGreen:GetValue(req).Value
+    local dotB = InDotColorBlue:GetValue(req).Value
+    local dotA = InDotColorAlpha:GetValue(req).Value
+
+    local width = img.DataWindow:Width()
+    local height = img.DataWindow:Height()
+
+    -- Calculate geometry rules
+    local SIN60 = 0.866025
+    local gridSpacingY = (dotShape == 1) and 1.0 or SIN60
+    local gridStaggerX = (dotShape == 1) and (staggerSquares and 1.0 or 0.0) or 1.0
+
+    local cellBasePitch = floor(max(3.0, width / screenDensity))
+    local cx, cy = cellBasePitch, cellBasePitch * gridSpacingY
+    if aspectRatio > 1.0 then cx = cx / aspectRatio
+    elseif aspectRatio < 1.0 then cy = cy * aspectRatio end
+
+    local cellPitchX = max(3.0, floor(cx))
+    local cellPitchY = max(3.0, floor(cy))
+
+    local averageCellPitch = (cellPitchX + cellPitchY) * 0.5
+    local aaEdgeWidth = enableDotAntialias and (aaEdgeSoftness * averageCellPitch) or 0.0
+
+    -- Calculate grid layout limits
+    local cellGridNumX = math.ceil(width / cellPitchX) + 3
+    local cellGridNumY = math.ceil(height / cellPitchY) + 3
+
+    -- Initialize intermediate buffers for passing data to the rendering kernel
+    local cellInfo1 = Image({
+        IMG_Width = cellGridNumX,
+        IMG_Height = cellGridNumY,
+        IMG_Depth = 8,
+    })
+
+    local cellInfo2 = Image({
+        IMG_Width = cellGridNumX,
+        IMG_Height = cellGridNumY,
+        IMG_Depth = 8,
+    })
+
+    local out = Image({ IMG_Like = img })
+
+    -- Execute kernel for cell information accumulation
+    local cellInfoNode = DVIPComputeNode(req, "CellInfoKernel", CellInfoKernel, "CellInfoParams", CellInfoParams)
+
+    if cellInfoNode then
+        -- Mount kernel parameters
+        local params = cellInfoNode:GetParamBlock(CellInfoParams)
+        params.srcSize[0] = width
+        params.srcSize[1] = height
+        params.dstSize[0] = cellGridNumX
+        params.dstSize[1] = cellGridNumY
+        params.screenDensity = screenDensity
+        params.contrast = contrast
+        params.aspectRatio = aspectRatio
+        params.dotGain = dotGain
+        params.dotCurve = dotSizeCurve
+        params.minDotRadius = cutoffDotRadius
+        params.clipRadius = maxDotRadius
+        params.jitterPhase = jitterPhase
+        params.positionJitter = positionJitter
+        params.sizeJitter = sizeJitter
+        params.aspectJitter = aspectJitter
+        params.invertMode = invertMode > 0.5 and 1 or 0
+        params.brightnessCutoff = brightnessCutoff
+        params.useOriginalColor = useOriginalColor
+        params.gridSpacingY = gridSpacingY
+        params.gridStaggerX = gridStaggerX
+
+        cellInfoNode:SetParamBlock(params)
+        cellInfoNode:AddSampler("RowSampler", TEX_FILTER_MODE_POINT, TEX_ADDRESS_MODE_CLAMP,
+            TEX_NORMALIZED_COORDS_FALSE)
+        cellInfoNode:AddInput("src", img)
+        cellInfoNode:AddOutput("dst_info1", cellInfo1)
+        cellInfoNode:AddOutput("dst_info2", cellInfo2)
+
+        local success = cellInfoNode:RunSession(req)
+        if not success then
+            -- Fail-safe passthrough to output
+            OutImage:Set(req, img)
+            return
+        end
+    end
+
+    -- Execute dot rendering compositor kernel
+    local renderNode = DVIPComputeNode(req, "RenderDotsKernel", RenderDotsKernel, "RenderParams", RenderParams)
+
+    if renderNode then
+        -- Mount kernel parameters
+        local params = renderNode:GetParamBlock(RenderParams)
+        params.srcSize[0] = width
+        params.srcSize[1] = height
+        params.blendWithInput = blendWithInput
+        params.paperColor[0] = paperR
+        params.paperColor[1] = paperG
+        params.paperColor[2] = paperB
+        params.paperColor[3] = paperA
+        params.cellGridNum[0] = cellGridNumX
+        params.cellGridNum[1] = cellGridNumY
+        params.dotColor[0] = dotR
+        params.dotColor[1] = dotG
+        params.dotColor[2] = dotB
+        params.dotColor[3] = dotA
+        params.useOriginalColor = useOriginalColor
+        params.colorReduction = colorReduction
+        params.screenDensity = screenDensity
+        params.enableAntialias = (enableDotAntialias and 1 or 0)
+        params.aaEdgeWidth = aaEdgeWidth
+        params.dotShape = dotShape
+        params.aspectRatio = aspectRatio
+        params.rgbShift = rgbShift
+        params.gridSpacingY = gridSpacingY
+        params.gridStaggerX = gridStaggerX
+        params.lineAngle = lineAngle
+        params.cellBasePitch = cellBasePitch
+        -- Transfer palette data for hardware themes
+        local theme = ColorThemes[colorReduction + 1]
+        
+        -- Clear palette
+        for i = 0, 127 do params.themePalette[i] = 0.0 end
+        params.mappingMode = 0
+        -- Populate palette from theme definition
+        if theme and theme.PaletteType == PALETTE_TYPE.LUMA then
+            params.mappingMode = 1 -- Luma Mode (16 slots)
+            params.paletteSize = 16
+            local N = #theme.Palette
+            for i = 0, 15 do
+                local sourceIdx = math.floor(i * N / 16) + 1
+                local entry = theme.Palette[sourceIdx]
+                local baseIdx = i * 4
+                params.themePalette[baseIdx + 0] = entry[1]
+                params.themePalette[baseIdx + 1] = entry[2]
+                params.themePalette[baseIdx + 2] = entry[3]
+                params.themePalette[baseIdx + 3] = 1.0
+            end
+        elseif theme and (theme.PaletteType == PALETTE_TYPE.RGB or theme.PaletteType == PALETTE_TYPE.NEAREST_NEIGHBOR) then
+            params.mappingMode = 2 -- Nearest Neighbor Mode
+            params.paletteSize = #theme.Palette
+            for i = 0, params.paletteSize - 1 do
+                local entry = theme.Palette[i + 1]
+                local baseIdx = i * 4
+                params.themePalette[baseIdx + 0] = entry[1]
+                params.themePalette[baseIdx + 1] = entry[2]
+                params.themePalette[baseIdx + 2] = entry[3]
+                params.themePalette[baseIdx + 3] = 1.0
+            end
+        end
+
+        renderNode:SetParamBlock(params)
+        renderNode:AddSampler("RowSampler", TEX_FILTER_MODE_POINT, TEX_ADDRESS_MODE_CLAMP,
+            TEX_NORMALIZED_COORDS_TRUE)
+        --  renderNode:AddSampler("CellCenterSampler", TEX_FILTER_MODE_POINT, TEX_ADDRESS_MODE_CLAMP,
+        --      TEX_NORMALIZED_COORDS_FALSE)
+        renderNode:AddInput("cell_info1", cellInfo1)
+        renderNode:AddInput("cell_info2", cellInfo2)
+        renderNode:AddInput("src_img", img)
+        renderNode:AddOutput("dst", out)
+
+        local success = renderNode:RunSession(req)
+        if not success then
+            -- Fail-safe passthrough to output
+            OutImage:Set(req, img)
+            return
+        end
+    else
+        out = img
+    end
+
+    -- Final Pipeline Output Return
+    if ShowCellInfo then
+        OutCellInfo1:Set(req, cellInfo1)
+        OutCellInfo2:Set(req, cellInfo2)
+    end
+    OutImage:Set(req, out)
+end
+
+function NotifyChanged(inp, param, time)
+    if inp == InGithub then
+        if param.Value == 1 then
+            bmd.openurl("https://github.com/mug-lab-3/mug-advanced-halftone")
+        end
+    end
+    if inp == InDotShape then
+        local shape = math.floor(param.Value + 0.5)
+        if shape == 1 then
+            InStaggerSquareDots:SetAttrs({IC_Visible = true})
+        else
+            InStaggerSquareDots:SetAttrs({IC_Visible = false})
+        end
+
+        if shape == 3 or shape == 4 then
+            InLineAngle:SetAttrs({IC_Visible = true})
+        else
+            InLineAngle:SetAttrs({IC_Visible = false})
+        end
+    end
+
+    if inp == InPaperColorPreset then
+        -- Resolve chosen paper color presets
+        local presetIndex = math.floor(param.Value + 0.5)
+
+        -- Establish primitive RGB assignment
+        local r, g, b = 1.0, 1.0, 1.0 -- White default
+
+        if presetIndex == 1 then      -- Pure White
+            r, g, b = 1.00, 1.00, 1.00
+        elseif presetIndex == 2 then  -- Warm White
+            r, g, b = 1.00, 0.98, 0.94
+        elseif presetIndex == 3 then  -- Cool White
+            r, g, b = 0.97, 0.97, 1.00
+        elseif presetIndex == 4 then  -- Natural White
+            r, g, b = 0.98, 0.98, 0.96
+        elseif presetIndex == 5 then  -- Cream
+            r, g, b = 0.97, 0.95, 0.86
+        elseif presetIndex == 6 then  -- Ivory
+            r, g, b = 1.00, 0.97, 0.90
+        elseif presetIndex == 7 then  -- Light Gray
+            r, g, b = 0.90, 0.90, 0.90
+        elseif presetIndex == 8 then  -- Newspaper
+            r, g, b = 0.93, 0.91, 0.83
+        elseif presetIndex == 9 then  -- Vintage
+            r, g, b = 0.96, 0.92, 0.80
+        elseif presetIndex == 10 then -- Kraft
+            r, g, b = 0.85, 0.75, 0.58
+        elseif presetIndex == 11 then -- Recycled
+            r, g, b = 0.87, 0.87, 0.82
+        elseif presetIndex == 12 then -- Light Blue
+            r, g, b = 0.90, 0.95, 1.00
+        elseif presetIndex == 13 then -- Light Green
+            r, g, b = 0.90, 0.98, 0.90
+        elseif presetIndex == 14 then -- Light Pink
+            r, g, b = 1.00, 0.90, 0.93
+        elseif presetIndex == 15 then -- Light Yellow
+            r, g, b = 1.00, 1.00, 0.88
+        end
+
+        -- Forward parsed values down to unified primitive colors
+        if presetIndex > 0 then
+            InPaperColorRed:SetSource(Number(r), time)
+            InPaperColorGreen:SetSource(Number(g), time)
+            InPaperColorBlue:SetSource(Number(b), time)
+        end
+    end
+
+    if inp == InColorReduction then
+        local modeIndex = math.floor(param.Value + 0.5)
+        local theme = ColorThemes[modeIndex + 1]
+
+        if theme and theme.Paper then
+            -- InBlendWithInput:SetSource(Number(0.0), time) -- Ensure paper color is visible
+            InUseOriginalColor:SetSource(Number(1.0), time) -- Force Original Color ON when picking a theme
+            InPaperColorPreset:SetSource(Number(0.0), time) -- Set to custom preset
+            InPaperColorRed:SetSource(Number(theme.Paper[1]), time)
+            InPaperColorGreen:SetSource(Number(theme.Paper[2]), time)
+            InPaperColorBlue:SetSource(Number(theme.Paper[3]), time)        
+        end
+    end
+    if inp == InUseOriginalColor then
+        if param.Value > 0.5 then
+            InColorReduction:SetAttrs({IC_Visible = true})
+        else
+            InColorReduction:SetAttrs({IC_Visible = false})
+        end
+    end
+
+    return true
+end
