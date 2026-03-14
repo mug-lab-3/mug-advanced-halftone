@@ -27,7 +27,7 @@ SOFTWARE.
 ShowCellInfo = false
 
 -- Set version globally for easy maintenance
-VERSION = 1.81
+VERSION = 1.82
 
 --******************************************************************************************************
 FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
@@ -1034,7 +1034,7 @@ function Create()
         LINKID_DataType = "Number",
         INPID_InputControl = "SliderControl",
         INP_Default = 200.0,
-        INP_MinAllowed = 1,
+        INP_MinAllowed = 20,
         INP_MaxAllowed = 1000.0,
         INPID_PreviewControl = "RangeControl",
         INP_Integer = false,
