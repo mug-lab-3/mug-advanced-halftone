@@ -1,7 +1,7 @@
 # 🎨 Mug Advanced Halftone
 
 <p align="center">
-  <img src="images/sample.png" alt="MugAdvancedHalftone sample" width="600">
+  <img src="images/sample.jpg" alt="MugAdvancedHalftone sample" width="600">
 </p>
 
 ## 📝 概要
