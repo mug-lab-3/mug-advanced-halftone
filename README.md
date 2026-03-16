@@ -97,6 +97,11 @@
 本プロジェクトは **MITライセンス** のもとで公開されています
 詳細は [LICENSE](./LICENSE) ファイルをご確認ください
 
+> [!NOTE]
+> **映像制作者の方へ / Note for Video Creators:**
+> 本ソフトウェアを使用して制作された映像作品（ビデオコンテンツ）において、著作権表示やクレジットの記載は任意であり、必須ではありません。商用・非商用問わず、自由にお使いください！
+> You do NOT need to include copyright notices or credits in your video works (rendered outputs) created using this Fuse. Feel free to use it for both commercial and non-commercial projects!
+
 ### ✅ やっていいこと（OK）
 - **商用利用**: Youtube動画や広告、映画などの制作に自由に使用できます
 - **改変**: Fuseファイルの中身を書き換えて自分好みに調整できます
