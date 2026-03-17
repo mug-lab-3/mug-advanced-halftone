@@ -38,7 +38,7 @@
 
 **macOS**
 ```text
-/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Fuses/
+~/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Fuses/
 ```
 
 **Linux**
@@ -55,7 +55,7 @@
 
 **macOS**
 ```text
-/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Templates/Edit/Effects/
+~/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Templates/Edit/Effects/
 ```
 
 **Linux**
