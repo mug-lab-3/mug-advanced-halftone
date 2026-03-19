@@ -1,10 +1,10 @@
 # 🎨 Mug Advanced Halftone
 
-<p align="center">
-  <img src="images/sample.jpg" alt="MugAdvancedHalftone sample" width="600">
+<p align="left">
+  <img src="https://img.shields.io/github/v/release/mug-lab-3/mug-advanced-halftone?label=version&color=orange" alt="Latest Version">
 </p>
 <p align="center">
-  <img src="https://img.shields.io/github/v/release/mug-lab-3/mug-advanced-halftone?label=version&color=orange" alt="Latest Version">
+  <img src="images/sample.jpg" alt="MugAdvancedHalftone sample" width="600">
 </p>
 
 ## 📝 概要
