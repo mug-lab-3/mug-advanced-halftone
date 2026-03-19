@@ -31,7 +31,7 @@ created using this Fuse. Feel free to use it for both commercial and non-commerc
 ShowCellInfo = false
 
 -- Set version globally for easy maintenance
-VERSION = 1.90
+VERSION = 1.91
 
 --******************************************************************************************************
 FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
@@ -314,7 +314,7 @@ CellInfoParams = [[
   float positionJitter;   // Position jitter (random offset)
   float sizeJitter;       // Size jitter (random scale variation)
   float aspectJitter;     // Aspect ratio jitter (random ratio variation)
-  float angleJitter;      // Angle jitter (strength of ±45° variation)
+  float angleJitter;      // Angle jitter (strength of ±90° variation)
   int invertMode;         // Subtractive mode switch (inverts how luminance maps to dot size)
   float brightnessCutoff; // Brightness threshold for generating dots
   int useOriginalColor;   // Whether to use the original input color for dots
@@ -453,9 +453,6 @@ __KERNEL__ void CellInfoKernel(
 
     const float cellCenterX = ((float)x * cellPitchX) + halfPitchX + rowOffset + (randX * jitterAmountX);
     const float cellCenterY = ((float)y * cellPitchY) + halfPitchY - yOffset + (randY * jitterAmountY);
-
-    // dst_info1: Store cell position information
-    const float4 cellInfo1 = to_float4((float)x, (float)y, cellCenterX, cellCenterY);
 
     // Define sampling region around the cell to compute average luminance
     const int samplingRadius = (int)(halfPitchX);
