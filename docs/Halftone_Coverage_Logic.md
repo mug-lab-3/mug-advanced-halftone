@@ -49,17 +49,28 @@
 
 ピクセルとドット中心のX軸・Y軸の距離が、どちらか一方でもこの `bbSize` を超えていれば、そのピクセルは絶対にドット（およびそのぼかし領域）に含まれることはないと確定し、カバレッジはゼロになります。
 
-### 3-2. アスペクト比（縦横比）の適用
-ドットを縦長や横長に変形させる際、ドットの半径自体を直接引き伸ばすとマス目からはみ出し、隣のバウンディングボックスの描画判定をも狂わせてしまいます。そこでここでは**「ピクセルとドット中心の距離を測るスケール（物差し）」の方を変更**します。
+### 3-2. 角度回転とアスペクト比（縦横比）の適用
+ドットを変形・回転させる際、ドットの形状自体を操作するのではなく、**「ピクセルとドット中心の距離を測るスケール（物差し）」の方を変更・回転**させます。本プラグインでは、まず**アングルジッターによる回転**を適用し、その後に**アスペクト比によるスケーリング**を行います。
 
 実際のソースコード（`checkCellDot`関数内）では以下のように実装されています：
 ```c
-float2 measureDiff = absDiff; // ここまで計算したX,Yの距離
-// 縦横のアスペクト比率（finalAspect）によるスケーリング
+float2 rotatedDiff = diff; // 中心からの相対座標
+// --- アングルジッターによる回転 ---
+const float angleDegrees = _tex2DVec4(cell_info3, cellUV.x, cellUV.y).x;
+if (angleDegrees != 0.0f) {
+    const float angleRad = angleDegrees * (3.14159265f / 180.0f);
+    const float cosA = _cosf(angleRad);
+    const float sinA = _sinf(angleRad);
+    rotatedDiff.x = diff.x * cosA - diff.y * sinA;
+    rotatedDiff.y = diff.x * sinA + diff.y * cosA;
+}
+
+// --- アスペクト比（縦横比）の適用 ---
+float2 measureDiff = to_float2(_fabs(rotatedDiff.x), _fabs(rotatedDiff.y));
 if (finalAspect > 1.0f) {
-    measureDiff.x *= finalAspect; // X軸方向の距離を大きく見積もる（横幅を縮める）
+    measureDiff.x *= finalAspect; // X軸方向の距離を大きく見積もる
 } else if (finalAspect < 1.0f) {
-    measureDiff.y /= _fmaxf(0.01f, finalAspect); // Y軸方向の距離を大きく見積もる（縦幅を縮める）
+    measureDiff.y /= _fmaxf(0.01f, finalAspect); // Y軸方向の距離を大きく見積もる
 }
 ```
 

@@ -152,32 +152,39 @@
 				},
 				Input22 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
+					Source = "AngleJitter",
+					Name = "AngleJitter",
+					Page = "Controls",
+					Default = 0,
+				},
+				Input23 = InstanceInput {
+					SourceOp = "MugAdvancedHalftone1",
 					Source = "Label1772313000674",
 					Page = "Controls",
 					Default = 1,
 				},
-				Input23 = InstanceInput {
+				Input24 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
 					Source = "RGBShift",
 					Name = "RGBShift",
 					Page = "Controls",
 					Default = 0,
 				},
-				Input24 = InstanceInput {
+				Input25 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
 					Source = "UseOriginalColor",
 					Name = "UseOriginalColor",
 					Page = "Controls",
 					Default = 0,
 				},
-				Input25 = InstanceInput {
+				Input26 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
 					Source = "ColorReduction",
 					ControlGroup = 1,
 					Page = "Controls",
 					Default = 0,
 				},
-				Input26 = InstanceInput {
+				Input27 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
 					Source = "DotColorRed",
 					Name = "Dot Color",
@@ -185,7 +192,7 @@
 					Page = "Controls",
 					Default = 0.0627,
 				},
-				Input27 = InstanceInput {
+				Input28 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
 					Source = "DotColorGreen",
 					Name = "Color",
@@ -193,7 +200,7 @@
 					Page = "Controls",
 					Default = 0.0156,
 				},
-				Input28 = InstanceInput {
+				Input29 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
 					Source = "DotColorBlue",
 					Name = "Color",
@@ -201,7 +208,7 @@
 					Page = "Controls",
 					Default = 0,
 				},
-				Input29 = InstanceInput {
+				Input30 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
 					Source = "DotColorAlpha",
 					Name = "Color",
@@ -209,27 +216,27 @@
 					Page = "Controls",
 					Default = 1,
 				},
-				Input30 = InstanceInput {
+				Input31 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
 					Source = "Label1772313012285",
 					Page = "Controls",
 					Default = 1,
 				},
-				Input31 = InstanceInput {
+				Input32 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
 					Source = "BlendWithInput",
 					Name = "BlendWithInput",
 					Page = "Controls",
 					Default = 0,
 				},
-				Input32 = InstanceInput {
+				Input33 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
 					Source = "PaperColorPreset",
 					Name = "PaperColorPreset",
 					Page = "Controls",
 					Default = 0,
 				},
-				Input33 = InstanceInput {
+				Input34 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
 					Source = "PaperColorRed",
 					Name = "Color",
@@ -237,7 +244,7 @@
 					Page = "Controls",
 					Default = 0.85,
 				},
-				Input34 = InstanceInput {
+				Input35 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
 					Source = "PaperColorGreen",
 					Name = "Color",
@@ -245,7 +252,7 @@
 					Page = "Controls",
 					Default = 0.75,
 				},
-				Input35 = InstanceInput {
+				Input36 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
 					Source = "PaperColorBlue",
 					Name = "Color",
@@ -253,7 +260,7 @@
 					Page = "Controls",
 					Default = 0.58,
 				},
-				Input36 = InstanceInput {
+				Input37 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
 					Source = "PaperColorAlpha",
 					Name = "Color",
@@ -261,19 +268,19 @@
 					Page = "Controls",
 					Default = 1,
 				},
-				Input37 = InstanceInput {
+				Input38 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
 					Source = "Github",
 					Name = "Github",
 					Page = "About",
 				},
-				Input38 = InstanceInput {
+				Input39 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
 					Source = "Sep1772313035822",
 					Name = "Separator",
 					Page = "About",
 				},
-				Input39 = InstanceInput {
+				Input40 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
 					Source = "AboutText",
 					Name = "AboutText",
@@ -340,7 +347,7 @@
 							LINKID_DataType = "Number",
 							LBLC_DropDownButton = true,
 							INPID_InputControl = "LabelControl",
-							LBLC_NumInputs = 4,
+							LBLC_NumInputs = 5,
 							INP_Passive = true,
 							INP_External = false,
 							LINKS_Name = "Dot Jitter",
