@@ -1,18 +1,7 @@
 # 🎨 Mug Advanced Halftone
 
 <p align="left">
-  <a href="https://github.com/mug-lab-3/mug-advanced-halftone/releases">
-    <img src="https://img.shields.io/github/v/release/mug-lab-3/mug-advanced-halftone?label=version&color=orange" alt="Latest Version">
-  </a>
-  <a href="https://github.com/mug-lab-3/mug-advanced-halftone/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/mug-lab-3/mug-advanced-halftone?color=blue" alt="License">
-  </a>
-  <a href="https://github.com/mug-lab-3/mug-advanced-halftone/releases">
-    <img src="https://img.shields.io/github/downloads/mug-lab-3/mug-advanced-halftone/total?label=downloads&color=green" alt="Downloads">
-  </a>
-  <a href="https://github.com/mug-lab-3/mug-advanced-halftone/releases/latest">
-    <img src="https://img.shields.io/badge/Release--Notes-latest-blue?logo=github" alt="Release Notes">
-  </a>
+  <a href="https://github.com/mug-lab-3/mug-advanced-halftone/releases"><img src="https://img.shields.io/github/v/release/mug-lab-3/mug-advanced-halftone?label=version&color=orange" alt="Latest Version"></a> <a href="https://github.com/mug-lab-3/mug-advanced-halftone/blob/main/LICENSE"><img src="https://img.shields.io/github/license/mug-lab-3/mug-advanced-halftone?color=blue" alt="License"></a> <a href="https://github.com/mug-lab-3/mug-advanced-halftone/releases"><img src="https://img.shields.io/github/downloads/mug-lab-3/mug-advanced-halftone/total?label=downloads&color=green" alt="Downloads"></a> <a href="https://github.com/mug-lab-3/mug-advanced-halftone/releases/latest"><img src="https://img.shields.io/badge/Release--Notes-latest-blue?logo=github" alt="Release Notes"></a>
 </p>
 <p align="center">
   <img src="images/sample.jpg" alt="MugAdvancedHalftone sample" width="600">
