@@ -2,6 +2,9 @@
 
 <p align="left">
   <img src="https://img.shields.io/github/v/release/mug-lab-3/mug-advanced-halftone?label=version&color=orange" alt="Latest Version">
+  <img src="https://img.shields.io/github/license/mug-lab-3/mug-advanced-halftone?color=blue" alt="License">
+  <img src="https://img.shields.io/github/downloads/mug-lab-3/mug-advanced-halftone/total?label=downloads&color=green" alt="Downloads">
+  <a href="https://github.com/mug-lab-3/mug-advanced-halftone/releases/latest"><img src="https://img.shields.io/badge/Release--Notes-latest-blue?logo=github" alt="Release Notes"></a>
 </p>
 <p align="center">
   <img src="images/sample.jpg" alt="MugAdvancedHalftone sample" width="600">
@@ -70,6 +73,9 @@
 
 ## ⚙️ パラメータ
 
+<details>
+<summary><b>クリックしてパラメータ詳細を表示 / Click to expand Parameter Reference</b></summary>
+
 | セクション | パラメータ | 説明 |
 | :--- | :--- | :--- |
 | **Global** | Screen Density | ドットの細かさ |
@@ -94,6 +100,8 @@
 | | Dot Color | 指定色の設定 |
 | **Background** | Blend With Input | 元の画像に直接合成 |
 | | Paper Color | 背景色（紙の色） |
+
+</details>
 
 ---
 
