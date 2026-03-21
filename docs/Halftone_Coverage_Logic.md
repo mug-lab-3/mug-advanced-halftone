@@ -55,22 +55,21 @@
 実際のソースコード（`checkCellDot`関数内）では以下のように実装されています：
 ```c
 float2 rotatedDiff = diff; // 中心からの相対座標
-// --- アングルジッターによる回転 ---
-const float angleDegrees = _tex2DVec4(cell_info3, cellUV.x, cellUV.y).x;
-if (angleDegrees != 0.0f) {
-    const float angleRad = angleDegrees * (3.14159265f / 180.0f);
-    const float cosA = _cosf(angleRad);
-    const float sinA = _sinf(angleRad);
+// --- アングルジッターによる回転 (V1.91～ 事前計算された定数を使用) ---
+const float4 angleData = _tex2DVec4(cell_info3, cellUV.x, cellUV.y);
+if (angleData.x != 0.0f) {
+    const float cosA = angleData.y;
+    const float sinA = angleData.z;
     rotatedDiff.x = diff.x * cosA - diff.y * sinA;
     rotatedDiff.y = diff.x * sinA + diff.y * cosA;
 }
 
-// --- アスペクト比（縦横比）の適用 ---
+// --- アスペクト比（縦横比）の適用 (V1.91～ 事前計算された逆数を使用) ---
 float2 measureDiff = to_float2(_fabs(rotatedDiff.x), _fabs(rotatedDiff.y));
 if (finalAspect > 1.0f) {
     measureDiff.x *= finalAspect; // X軸方向の距離を大きく見積もる
 } else if (finalAspect < 1.0f) {
-    measureDiff.y /= _fmaxf(0.01f, finalAspect); // Y軸方向の距離を大きく見積もる
+    measureDiff.y *= angleData.w; // Y軸方向の距離を大きく見積もる (recipAspect)
 }
 ```
 

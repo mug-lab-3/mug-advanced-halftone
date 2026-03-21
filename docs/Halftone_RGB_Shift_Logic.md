@@ -29,10 +29,10 @@ const float shiftVal = (blendWithInput != 0 || useOriginalColorFlag != 0) ? para
 
 // UV空間（0.0～1.0）に乗算するための補正
 // 赤(R)は左上（マイナス方向）へズラす
-const float2 shiftROFF = to_float2(-shiftVal / intWidth, -shiftVal / intHeight);
+const float2 shiftROFF = to_float2(-shiftVal * invW, -shiftVal * invH);
 
 // 青(B)は右下（プラス方向）へズラす
-const float2 shiftBOFF = to_float2( shiftVal / intWidth,  shiftVal / intHeight);
+const float2 shiftBOFF = to_float2( shiftVal * invW,  shiftVal * invH);
 ```
 
 このように、赤は左上へ、青は右下へという完全に対称なベクトル（逆方向）へズラすことで、エッジ付近に特徴的でアバンギャルドな色収差効果を生み出します。映像エフェクトとしては、版ズレ（平行移動）よりもこの色収差的な広がり方の方が視覚的によりリッチな効果を与えます。
@@ -51,12 +51,12 @@ float4 inputColor = paperColor;
 if (blendWithInput != 0) {
     if (shiftVal == 0.0f) {
         // 【最適化】シフト値が0なら、1回だけ元座標をサンプリングして終了（めちゃくちゃ軽い）
-        inputColor = _tex2DVecN(src_img, px, py, 15);
+        inputColor = _tex2DVec4(src_img, px, py);
     } else {
         // シフト値がある場合のみ、R, G, B を独立して3回サンプリングする
-        const float4 sR = _tex2DVecN(src_img, px + shiftROFF.x, py + shiftROFF.y, 15); // ちょっと左上を読む
-        const float4 sG = _tex2DVecN(src_img, px, py, 15);                             // 真下（本来の座標）を読む
-        const float4 sB = _tex2DVecN(src_img, px + shiftBOFF.x, py + shiftBOFF.y, 15); // ちょっと右下を読む
+        const float4 sR = _tex2DVec4(src_img, px + shiftROFF.x, py + shiftROFF.y); // ちょっと左上を読む
+        const float4 sG = _tex2DVec4(src_img, px, py);                             // 真下（本来の座標）を読む
+        const float4 sB = _tex2DVec4(src_img, px + shiftBOFF.x, py + shiftBOFF.y); // ちょっと右下を読む
         
         // 読み込んだ3つのピクセル情報から、R, G, B成分だけを抽出して1つの色に合体（再構築）させる
         inputColor = to_float4(sR.x, sG.y, sB.z, sG.w);

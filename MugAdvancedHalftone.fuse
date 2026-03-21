@@ -561,13 +561,17 @@ __KERNEL__ void CellInfoKernel(
     const float randAngle1 = hash3D(ux, uy, basePhase1, 314159265u);
     const float randAngle = _mix(randAngle0, randAngle1, t);
     const float finalAngle = randAngle * params->angleJitter * 90.0f;
+    const float angleRad = finalAngle * (3.14159265f / 180.0f);
+    const float cosA = _cosf(angleRad);
+    const float sinA = _sinf(angleRad);
+    const float recipAspect = _frecip(_fmaxf(0.01f, finalAspect));
 
     // dst_info1 (Geometry): [CenterX, CenterY, Radius, Aspect]
     // dst_info2 (Color): [R, G, B, Alpha]
-    // dst_info3 (Extra): [Angle, 0, 0, 0]
+    // dst_info3 (Extra): [Angle, cosA, sinA, recipAspect]
     _tex2DVec4Write(dst_info1, x, y, to_float4(cellCenterX, cellCenterY, dotRadius, finalAspect));
     _tex2DVec4Write(dst_info2, x, y, avgColor);
-    _tex2DVec4Write(dst_info3, x, y, to_float4(finalAngle, 0.0f, 0.0f, 1.0f));
+    _tex2DVec4Write(dst_info3, x, y, to_float4(finalAngle, cosA, sinA, recipAspect));
 }
 ]]
 
@@ -680,13 +684,13 @@ __DEVICE__ float checkCellDot(
 
         const float2 diff = pixelPos - cellCenter;
         
-        // --- Apply Angle Jitter Jitter ---
+        // --- Apply Angle Jitter ---
         float2 rotatedDiff = diff;
-        const float angleDegrees = _tex2DVec4(cell_info3, cellUV.x, cellUV.y).x;
-        if (angleDegrees != 0.0f) {
-            const float angleRad = angleDegrees * (3.14159265f / 180.0f);
-            const float cosA = _cosf(angleRad);
-            const float sinA = _sinf(angleRad);
+        const float4 angleData = _tex2DVec4(cell_info3, cellUV.x, cellUV.y);
+        const float finalAngle = angleData.x;
+        if (finalAngle != 0.0f) {
+            const float cosA = angleData.y;
+            const float sinA = angleData.z;
             rotatedDiff.x = diff.x * cosA - diff.y * sinA;
             rotatedDiff.y = diff.x * sinA + diff.y * cosA;
         }
@@ -701,7 +705,7 @@ __DEVICE__ float checkCellDot(
         if (finalAspect > 1.0f) {
             measureDiff.x *= finalAspect; // Compress X-axis for tall dots
         } else if (finalAspect < 1.0f) {
-            measureDiff.y *= _frecip(_fmaxf(0.01f, finalAspect)); // Compress Y-axis for wide dots
+            measureDiff.y *= angleData.w; // Use pre-calculated recipAspect
         }
 
         if (dotShape == 0) { // Circle

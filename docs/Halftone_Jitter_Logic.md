@@ -123,7 +123,7 @@ const float finalAspect = _fmaxf(0.01f, params->aspectRatio * aspectMultiplier);
 // ユーザーが設定した強度を掛け合わせ、-90度 ～ 90度 の範囲で回転角を算出
 const float finalAngle = randAngle * params->angleJitter * 90.0f;
 ```
-この数値は中間バッファ `cell_info3` を介して描画カーネルに渡され、形状判定前の座標回転に使用されます。
+この数値（および回転行列用の $\cos, \sin$ 定数）は中間バッファ `cell_info3` を介して描画カーネルに渡され、形状判定前の座標回転に使用されます。
 
 ## まとめ
 
