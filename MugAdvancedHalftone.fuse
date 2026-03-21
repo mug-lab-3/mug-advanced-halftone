@@ -396,7 +396,7 @@ __KERNEL__ void CellInfoKernel(
     // Smoothstep curve (3t^2 - 2t^3) for seamless interpolation of random properties.
     // Using a non-linear cubic curve prevents sudden velocity changes at integer keyframes.
     const float fraction = phase - phaseBaseF;
-    const float t = fraction * fraction * (3.0f - 2.0f * fraction);
+    const float t = fraction * fraction * _fmaf(-2.0f, fraction, 3.0f);
 
     // For each random parameter, calculate values at the current and next integer phases, and linearly interpolate them using t
     // Changing the seedOffset gives completely different random sequences for Position (X, Y), Size (S), and Aspect (Aspect)
@@ -430,7 +430,7 @@ __KERNEL__ void CellInfoKernel(
     float cy = cellBasePitch * params->gridSpacingY; // Apply base vertical placement ratio driven from CPU
 
     if (gridAspect > 1.0f) {
-        cx /= gridAspect; // Squish horizontal gaps for tall dots
+        cx = _fdivide(cx, gridAspect); // Squish horizontal gaps for tall dots
     } else if (gridAspect < 1.0f) {
         cy *= gridAspect; // Squish vertical gaps for wide dots
     }
@@ -451,8 +451,8 @@ __KERNEL__ void CellInfoKernel(
     const float jitterAmountX = params->positionJitter * halfPitchX;
     const float jitterAmountY = params->positionJitter * halfPitchY;
 
-    const float cellCenterX = ((float)x * cellPitchX) + halfPitchX + rowOffset + (randX * jitterAmountX);
-    const float cellCenterY = ((float)y * cellPitchY) + halfPitchY - yOffset + (randY * jitterAmountY);
+    const float cellCenterX = _fmaf((float)x, cellPitchX, halfPitchX + rowOffset + (randX * jitterAmountX));
+    const float cellCenterY = _fmaf((float)y, cellPitchY, halfPitchY - yOffset + (randY * jitterAmountY));
 
     // Define sampling region around the cell to compute average luminance
     const int samplingRadius = (int)(halfPitchX);
@@ -501,8 +501,8 @@ __KERNEL__ void CellInfoKernel(
         for (int pixelX = localMinX; pixelX <= localMaxX; pixelX += sampleStep) {
             const float4 color = _tex2DVec4(src, (float)pixelX, (float)pixelY);
 
-            // Compute perceptual luminance
-            const float luma = color.x * LUMA_R + color.y * LUMA_G + color.z * LUMA_B;
+            // Compute perceptual luminance using nested fma for optimization
+            const float luma = _fmaf(color.x, LUMA_R, _fmaf(color.y, LUMA_G, color.z * LUMA_B));
 
             // Accumulate luminance and color
             totalLuma = _fmaf(luma, sampleStepSquared, totalLuma);
@@ -519,7 +519,7 @@ __KERNEL__ void CellInfoKernel(
     }
 
     // Calculate average luminance and color
-    const float invSampleCount = (sampleCount > 0) ? (1.0f / (float)sampleCount) : 0.0f;
+    const float invSampleCount = (sampleCount > 0) ? _frecip((float)sampleCount) : 0.0f;
     float avgLuma = totalLuma * invSampleCount;
 
     // Average color calculation
@@ -554,7 +554,7 @@ __KERNEL__ void CellInfoKernel(
 
     float dotRadius = 0.0f;
     if (passesBrightness && tonalValue >= params->minDotRadius) {
-        dotRadius = _fminf(tonalValue * maxCellRadius, maxCellRadius * params->clipRadius);
+        dotRadius = _clampf(tonalValue * maxCellRadius, 0.0f, maxCellRadius * params->clipRadius);
     }
 
     const float randAngle0 = hash3D(ux, uy, basePhase0, 314159265u);
@@ -745,7 +745,7 @@ __DEVICE__ float checkCellDot(
             const float pitch = cellBasePitch;
             
             // Distance to global line center
-            const float phase1 = proj1 - _floorf(proj1 / pitch) * pitch;
+            const float phase1 = proj1 - _floorf(_fdivide(proj1, pitch)) * pitch;
             const float dist1 = _fabs(phase1 - pitch * 0.5f);
             
             float coverage = 0.0f;
@@ -761,7 +761,7 @@ __DEVICE__ float checkCellDot(
                 const float nx2 = _cosf(angleRad);
                 const float ny2 = _sinf(angleRad);
                 const float proj2 = _fmaf(pixelPos.x, nx2, pixelPos.y * ny2);
-                const float phase2 = proj2 - _floorf(proj2 / pitch) * pitch;
+                const float phase2 = proj2 - _floorf(_fdivide(proj2, pitch)) * pitch;
                 const float dist2 = _fabs(phase2 - pitch * 0.5f);
                 
                 // Secondary hatch for shadows
@@ -823,12 +823,12 @@ __DEVICE__ float4 blendDotOver(
     if (blendFactor <= 0.0f)
         return baseColor;
 
-    return to_float4(
-        baseColor.x * (1.0f - blendFactor) + dotColor.x * blendFactor,
-        baseColor.y * (1.0f - blendFactor) + dotColor.y * blendFactor,
-        baseColor.z * (1.0f - blendFactor) + dotColor.z * blendFactor,
-        _fmaxf(baseColor.w, blendFactor)
-    );
+    // Vectorized linear interpolation for RGB components
+    const float3 baseRGB = to_float3(baseColor.x, baseColor.y, baseColor.z);
+    const float3 dotRGB  = to_float3(dotColor.x,  dotColor.y,  dotColor.z);
+    const float3 blendedRGB = _mix(baseRGB, dotRGB, blendFactor);
+    
+    return to_float4(blendedRGB.x, blendedRGB.y, blendedRGB.z, _fmaxf(baseColor.w, blendFactor));
 }
 
 // --- [UPDATE_BEST_CELL Refactoring] ---
