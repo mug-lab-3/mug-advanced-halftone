@@ -31,7 +31,7 @@ created using this Fuse. Feel free to use it for both commercial and non-commerc
 ShowCellInfo = false
 
 -- Set version globally for easy maintenance
-VERSION = 1.92
+VERSION = 1.93
 
 --******************************************************************************************************
 FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
@@ -69,7 +69,7 @@ ColorThemes = {
         Palette = {
             { 0.00, 0.00, 0.00 }, { 0.11, 0.17, 0.33 }, { 0.49, 0.15, 0.33 }, { 0.00, 0.53, 0.32 },
             { 0.67, 0.32, 0.21 }, { 0.37, 0.34, 0.31 }, { 0.76, 0.77, 0.78 }, { 1.00, 0.95, 0.91 },
-            { 1.00, 0.00, 0.30 }, { 1.00, 0.64, 0.00 }, { 1.00, 0.93, 0.15 }, { 0.00, 0.89, 0.21 },
+            { 1.00, 0.00, 0.30 }, { 1.00, 0.64, 0.00 }, { 1.00, 1.00, 0.15 }, { 0.00, 0.91, 0.34 },
             { 0.16, 0.68, 1.00 }, { 0.51, 0.46, 0.61 }, { 1.00, 0.47, 0.66 }, { 1.00, 0.80, 0.67 }
         }
     },
@@ -619,7 +619,22 @@ __DEVICE__ float4 applyColorReduction(float4 color, int mode, __CONSTANTREF__ Re
     } else if (mappingMode == 2) { // Nearest Neighbor Mode
         float minDelta = 1e10f;
         const int count = params->paletteSize;
-        
+
+        // Revised: Apply perceptual matching only for 16/32 colors (Indices 1 & 2)
+        // to address "floating black" without affecting other themes.
+        const int colorReduction = params->colorReduction;
+        const int usePerceptual = (colorReduction == 1 || colorReduction == 2) ? 1 : 0;
+
+        float pr = color.x;
+        float pg = color.y;
+        float pb = color.z;
+
+        if (usePerceptual != 0) {
+            pr = _sqrtf(_fmaxf(color.x, 0.0f));
+            pg = _sqrtf(_fmaxf(color.y, 0.0f));
+            pb = _sqrtf(_fmaxf(color.z, 0.0f));
+        }
+
         // Cast the float[128] array to a float4 pointer for vectorized access
         __CONSTANTREF__ float4 *palette = (__CONSTANTREF__ float4 *)params->themePalette;
         
@@ -627,9 +642,9 @@ __DEVICE__ float4 applyColorReduction(float4 color, int mode, __CONSTANTREF__ Re
             const float4 p = palette[i];
             
             // Perceptual weighting factor (R:0.3, G:0.59, B:0.11)
-            const float dr = color.x - p.x;
-            const float dg = color.y - p.y;
-            const float db = color.z - p.z;
+            const float dr = pr - p.x;
+            const float dg = pg - p.y;
+            const float db = pb - p.z;
             
             const float delta = (dr * dr * 0.3f) + (dg * dg * 0.59f) + (db * db * 0.11f);
             
