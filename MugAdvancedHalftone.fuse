@@ -31,7 +31,7 @@ created using this Fuse. Feel free to use it for both commercial and non-commerc
 ShowCellInfo = false
 
 -- Set version globally for easy maintenance
-VERSION = 1.93
+VERSION = 1.94
 
 --******************************************************************************************************
 FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
@@ -112,7 +112,7 @@ ColorThemes = {
     },
     {
         Name = "Theme: Vintage PC 4c",
-        Paper = { 0.0, 0.0, 0.0 },
+        Paper = { 0.56, 1.0, 1.0 },
         PaletteType = PALETTE_TYPE.LUMA, -- Simplest mapping for 4-color PC
         Palette = {
             { 0.0, 0.0, 0.0 },  -- Black
@@ -123,7 +123,7 @@ ColorThemes = {
     },
     {
         Name = "Theme: Vintage PC 4c (0)",
-        Paper = { 0.00, 0.00, 0.00 },
+        Paper = { 0.81, 0.57, 0.00 },
         PaletteType = PALETTE_TYPE.NEAREST_NEIGHBOR,
         Palette = {
             { 0.00, 0.00, 0.00 }, -- Black
@@ -134,7 +134,7 @@ ColorThemes = {
     },
     {
         Name = "Theme: 80s Computer",
-        Paper = { 0.42, 0.42, 0.42 },
+        Paper = { 0.92, 0.92, 0.92 },
         PaletteType = PALETTE_TYPE.NEAREST_NEIGHBOR,
         Palette = {
             { 0.00, 0.00, 0.00 }, -- 0: Black
@@ -157,7 +157,7 @@ ColorThemes = {
     },
     {
         Name = "Theme: 80s Arcade Pop",
-        Paper = { 0.10, 0.10, 0.15 }, -- Deep night blue / dark
+        Paper = { 0.92, 0.92, 0.92 }, -- Deep night blue / dark
         PaletteType = PALETTE_TYPE.NEAREST_NEIGHBOR,
         Palette = {
             -- High-saturation "Pop" palette (NES/Arcade style)
@@ -180,7 +180,7 @@ ColorThemes = {
     },
     {
         Name = "Theme: Tokyo Night",
-        Paper = { 0.02, 0.02, 0.05 }, -- Extremely Dark Navy (Almost Black)
+        Paper = { 1.00, 1.00, 1.00 }, -- Extremely Dark Navy (Almost Black)
         PaletteType = PALETTE_TYPE.NEAREST_NEIGHBOR,
         Palette = {
             { 0.00, 0.00, 0.10 }, -- Deep Dark Blue (Base)
@@ -259,7 +259,7 @@ ColorThemes = {
     },
     {
         Name = "Theme: Thermal Camera",
-        Paper = { 0.00, 0.00, 0.20 }, -- Deep Midnight Blue
+        Paper = { 1.00, 1.00, 0.70 }, -- Deep Midnight Blue
         PaletteType = PALETTE_TYPE.LUMA,
         Palette = {
             { 0.00, 0.00, 0.50 }, -- Dark Blue (Low)
@@ -273,7 +273,7 @@ ColorThemes = {
     },
     {
         Name = "Theme: Thermal (Inverted)",
-        Paper = { 1.00, 1.00, 1.00 },
+        Paper = { 0.54, 0.00, 0.77 },
         PaletteType = PALETTE_TYPE.LUMA,
         Palette = {
             { 1.00, 1.00, 1.00 }, -- White (Highest Heat -> Inverted)
@@ -287,7 +287,7 @@ ColorThemes = {
     },
     {
         Name = "Theme: Night Vision",
-        Paper = { 0.00, 0.20, 0.00 },
+        Paper = { 0.84, 1.00, 0.84 },
         PaletteType = PALETTE_TYPE.LUMA,
         Palette = {
             { 0.00, 0.20, 0.00 },
