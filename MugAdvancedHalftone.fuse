@@ -31,7 +31,7 @@ created using this Fuse. Feel free to use it for both commercial and non-commerc
 ShowCellInfo = false
 
 -- Set version globally for easy maintenance
-VERSION = 1.94
+VERSION = 1.95
 
 --******************************************************************************************************
 FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
@@ -1266,7 +1266,7 @@ function Create()
     self:EndControlNest();
 
     self:BeginControlNest("Dot Color", "DotColorNest", true);
-    InRGBShift = self:AddInput("Radial RGB Shift (Req. Color/Blend)", "RGBShift", {
+    InRGBShift = self:AddInput("RGB Shift (Req. Color/Blend)", "RGBShift", {
         LINKID_DataType = "Number",
         INPID_InputControl = "SliderControl",
         INP_Default = 0.0,
