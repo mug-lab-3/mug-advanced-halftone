@@ -847,23 +847,18 @@ __DEVICE__ float4 blendDotOver(
 }
 
 // Helper: Computes radial UV offsets for Transverse Chromatic Aberration
+// Helper: Computes radial UV offsets for Transverse Chromatic Aberration
 __DEVICE__ void calculateRadialShift(
-    const float2 pos,
-    const float2 mid,
-    const float maxDist,
+    const float2 uv,
     const float shiftVal,
-    const float intWidth,
-    const float intHeight,
     float2 *shiftROFF,
     float2 *shiftBOFF)
 {
-    const float2 rel = pos - mid;
-    const float2 normRel = rel / _fmaxf(1.0f, maxDist);
-    const float2 radialShift = normRel * (shiftVal * maxDist);
-    shiftROFF->x = -radialShift.x / intWidth;
-    shiftROFF->y = -radialShift.y / intHeight;
-    shiftBOFF->x =  radialShift.x / intWidth;
-    shiftBOFF->y =  radialShift.y / intHeight;
+    const float2 uvRel = uv - to_float2(0.5f, 0.5f);
+    shiftROFF->x = -uvRel.x * shiftVal;
+    shiftROFF->y = -uvRel.y * shiftVal;
+    shiftBOFF->x =  uvRel.x * shiftVal;
+    shiftBOFF->y =  uvRel.y * shiftVal;
 }
 
 // Holds state for tracking the best dot coverage and color.
@@ -888,10 +883,6 @@ __DEVICE__ void updateBestCell(
     const int colorReduction,
     const int blendWithInput,
     const float shiftVal,
-    const float2 mid,
-    const float maxDist,
-    const float intWidth,
-    const float intHeight,
     __CONSTANTREF__ RenderParams *params,
     struct BestCellState *state,
     const float cellBasePitch)
@@ -906,8 +897,7 @@ __DEVICE__ void updateBestCell(
                 candidateDotColor = _tex2DVec4(cell_info2, baseUV.x, baseUV.y);
             } else {
                 float2 cellShiftROFF, cellShiftBOFF;
-                const float2 candidatePixelCenter = (candidatePos + to_float2(0.5f, 0.5f)) * (to_float2(intWidth, intHeight) / cellGridNum);
-                calculateRadialShift(candidatePixelCenter, mid, maxDist, shiftVal, intWidth, intHeight, &cellShiftROFF, &cellShiftBOFF);
+                calculateRadialShift(baseUV, shiftVal, &cellShiftROFF, &cellShiftBOFF);
 
                 const float4 cR = _tex2DVec4(cell_info2, baseUV.x + cellShiftROFF.x, baseUV.y + cellShiftROFF.y);
                 const float4 cG = _tex2DVec4(cell_info2, baseUV.x, baseUV.y);
@@ -1001,8 +991,6 @@ __KERNEL__ void RenderDotsKernel(
     const int blendWithInput = params->blendWithInput > 0 ? 1 : 0;
 
     const float shiftVal = (blendWithInput != 0 || useOriginalColorFlag != 0) ? params->rgbShift : 0.0f;
-    const float2 mid = to_float2(intWidth * 0.5f, intHeight * 0.5f);
-    const float maxDist = _hypotf(mid.x, mid.y);
 
     float4 inputColor = paperColor;
 
@@ -1014,7 +1002,7 @@ __KERNEL__ void RenderDotsKernel(
             inputColor = _tex2DVec4(src_img, px, py);
         } else {
             float2 shiftROFF, shiftBOFF;
-            calculateRadialShift(pixelPos, mid, maxDist, shiftVal, intWidth, intHeight, &shiftROFF, &shiftBOFF);
+            calculateRadialShift(to_float2(px, py), shiftVal, &shiftROFF, &shiftBOFF);
 
             // Independent RGB offset sampling to simulate misaligned print plates
             const float4 sR = _tex2DVec4(src_img, px + shiftROFF.x, py + shiftROFF.y);
@@ -1032,7 +1020,7 @@ __KERNEL__ void RenderDotsKernel(
     state.bestStrength = -1.0f;
     state.bestDotColor = (blendWithInput != 0 && useOriginalColorFlag != 0) ? inputColor : userDotColor;
 
-    updateBestCell(mainCellPos, pixelPos, cellGridNum, cell_info1, cell_info2, cell_info3, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, blendWithInput, shiftVal, mid, maxDist, intWidth, intHeight, params, &state, cellBasePitch);
+    updateBestCell(mainCellPos, pixelPos, cellGridNum, cell_info1, cell_info2, cell_info3, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, blendWithInput, shiftVal, params, &state, cellBasePitch);
 
     const float2 cellCenter = to_float2(
         mainCellX * cellPitch.x + ((isOddRow != 0) ? (halfCellPitch.x * params->gridStaggerX) : 0.0f) + halfCellPitch.x,
@@ -1069,11 +1057,11 @@ __KERNEL__ void RenderDotsKernel(
         for (int i = 0; i < checkCount; i++) {
             const int index = checkIndices[i];
             if (index < 0) continue;
-            updateBestCell(mainCellPos + neighborOffsets[index], pixelPos, cellGridNum, cell_info1, cell_info2, cell_info3, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, blendWithInput, shiftVal, mid, maxDist, intWidth, intHeight, params, &state, cellBasePitch);
+            updateBestCell(mainCellPos + neighborOffsets[index], pixelPos, cellGridNum, cell_info1, cell_info2, cell_info3, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, blendWithInput, shiftVal, params, &state, cellBasePitch);
         }
     } else {
         for (int i = 0; i < neighborCount; i++) {
-            updateBestCell(mainCellPos + neighborOffsets[i], pixelPos, cellGridNum, cell_info1, cell_info2, cell_info3, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, blendWithInput, shiftVal, mid, maxDist, intWidth, intHeight, params, &state, cellBasePitch);
+            updateBestCell(mainCellPos + neighborOffsets[i], pixelPos, cellGridNum, cell_info1, cell_info2, cell_info3, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, blendWithInput, shiftVal, params, &state, cellBasePitch);
         }
     }
 
@@ -1283,10 +1271,10 @@ function Create()
         INPID_InputControl = "SliderControl",
         INP_Default = 0.0,
         INP_MinAllowed = 0.0,
-        INP_MaxAllowed = 0.5,
+        INP_MaxAllowed = 0.1,
         INP_Precision = 3,
         INPS_StatusText =
-        "Simulates transverse chromatic aberration. 0.5 = 50% shift relative to image radius. zero at center.",
+        "Simulates transverse chromatic aberration. 0.1 = 10% shift relative to image radius. zero at center.",
     })
 
     InUseOriginalColor = self:AddInput("Use Original Color", "UseOriginalColor", {
