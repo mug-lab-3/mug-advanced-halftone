@@ -77,6 +77,9 @@
 | :--- | :--- | :--- |
 | **Global** | Screen Density | ドットの細かさ |
 | | Contrast | 元画像のコントラスト調整 |
+| | Invert Brightness | 明暗の反転（Subtractive Mode） |
+| | Margin X | ドットの横方向の間隔調整 |
+| | Margin Y | ドットの縦方向の間隔調整 |
 | **Dot Shape** | Dot Shape | ドットの形状 |
 | | Line Angle | 線・網線の角度 |
 | | Dot Aspect Ratio | 縦横比（正:縦長 / 負:横長） |
@@ -84,7 +87,6 @@
 | | Dot Size Curve | サイズの成長曲線 |
 | | Cutoff Dot Radius | 描画する最小の半径 |
 | | Clip Dot Radius | 最大サイズの制限 |
-| | Invert Brightness | 明暗の反転 |
 | | Enable Antialias | 境界のぼかし処理 |
 | **Dot Jitter** | Jitter Noise Phase| アニメーションの位相 |
 | | Position Jitter | 位置のランダムなズレ |

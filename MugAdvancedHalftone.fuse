@@ -31,7 +31,7 @@ created using this Fuse. Feel free to use it for both commercial and non-commerc
 ShowCellInfo = false
 
 -- Set version globally for easy maintenance
-VERSION = 1.96
+VERSION = 2.00
 
 --******************************************************************************************************
 FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
@@ -303,9 +303,8 @@ ColorThemes = {
 CellInfoParams = [[
   int srcSize[2];         // Source image size
   int dstSize[2];         // Output grid size (number of cells)
-  float screenDensity;    // Screen density
   float contrast;         // Contrast adjustment applied to sampled luminance
-  float aspectRatio;      // Dot aspect ratio
+  float aspectRatio;      // Base dot aspect ratio
   float dotGain;          // Dot gain effect (ink spread simulation)
   float dotCurve;         // Dot size growth curve coefficient
   float minDotRadius;     // Minimum dot radius to draw
@@ -318,8 +317,10 @@ CellInfoParams = [[
   int invertMode;         // Subtractive mode switch (inverts how luminance maps to dot size)
   float brightnessCutoff; // Brightness threshold for generating dots
   int useOriginalColor;   // Whether to use the original input color for dots
-  float gridSpacingY;     // Base spacing multiplier for Y-axis grid
   float gridStaggerX;     // X-axis offset multiplier for odd rows
+  float cellPitchX;       // Adjusted grid spacing X
+  float cellPitchY;       // Adjusted grid spacing Y
+  float cellBasePitch;    // Reference base pitch for dot sizing
 ]]
 
 -- Cell Information Calculation Kernel
@@ -420,25 +421,14 @@ __KERNEL__ void CellInfoKernel(
     const float aspectMultiplier = _exp2f(params->aspectJitter * randAspect * 2.0f);
     const float finalAspect = _fmaxf(0.01f, params->aspectRatio * aspectMultiplier);
 
-    // Dynamically calculate cell pitch/size on the GPU to reduce CPU overhead
-    const float width = (float)params->srcSize[0];
-    const float cellBasePitch = _fmaxf(3.0f, _floorf(width / params->screenDensity));
-    // Stretch or shrink the underlying coordinate grid to match the aspect ratio.
-    // Sampling logic squashes the distance checks appropriately.
-    const float gridAspect = params->aspectRatio;
-    float cx = cellBasePitch;
-    float cy = cellBasePitch * params->gridSpacingY; // Apply base vertical placement ratio driven from CPU
-
-    if (gridAspect > 1.0f) {
-        cx = _fdivide(cx, gridAspect); // Squish horizontal gaps for tall dots
-    } else if (gridAspect < 1.0f) {
-        cy *= gridAspect; // Squish vertical gaps for wide dots
-    }
-    const float cellPitchX = _fmaxf(3.0f, _floorf(cx));
-    const float cellPitchY = _fmaxf(3.0f, _floorf(cy));
-    const float2 cellPitch = to_float2(cellPitchX, cellPitchY);
+    // Use the Pitch values calculated on the CPU
+    const float cellBasePitch = params->cellBasePitch;
+    const float cellPitchX = params->cellPitchX;
+    const float cellPitchY = params->cellPitchY;
     const float halfPitchX = cellPitchX * 0.5f;
     const float halfPitchY = cellPitchY * 0.5f;
+    
+    // Dot size (Radius) is derived from basePitch to maintain size while spacing changes
     const float maxCellRadius = (cellBasePitch * 0.5f) * 1.5f;
 
     const float yOffset = halfPitchY;
@@ -583,20 +573,19 @@ RenderParams = [[
   float dotColor[4];      // [8-11] 16 bytes - Dot color (Foreground) [R,G,B,A] (Block 3: 16b aligned)
   int useOriginalColor;   // [12] 4 bytes - Whether to use the original input color for dots
   int colorReduction;     // [13] 4 bytes - Color reduction mode
-  float screenDensity;    // [14] 4 bytes - Screen density (calculates cell pitch on GPU)
-  int blendWithInput;     // [15] 4 bytes - Blend dots over input instead of paper (Block 4: 16b aligned)
-  int enableAntialias;    // [16] 4 bytes - Boolean flag: apply structural antialiasing
-  float aaEdgeWidth;      // [17] 4 bytes - Antialiasing edge blend width (in pixels)
-  int dotShape;           // [18] 4 bytes - Dot shape enum (0: Circle, 1: Square, 2: Diamond)
-  float aspectRatio;      // [19] 4 bytes - Dot aspect ratio (used for grid deformation) (Block 5: 16b aligned)
-  float rgbShift;         // [20] 4 bytes - Color plate misalignment strength (in pixels)
-  float gridSpacingY;     // [21] 4 bytes - Base spacing multiplier for Y-axis grid
-  float gridStaggerX;     // [22] 4 bytes - X-axis offset multiplier for odd rows
-  int mappingMode;        // [23] 4 bytes - 0: Off, 1: Luma (16 slots), 2: NearestNeighbor (Block 6: 16b aligned)
-  int paletteSize;        // [24] 4 bytes - Current number of active colors in palette
-  float lineAngle;        // [25] 4 bytes - Hatching line angle in degrees
-  float cellBasePitch;    // [26] 4 bytes - Base pitch for global pattern spacing
-  int _padding3;          // [27] 4 bytes - Alignment padding (Total 112 bytes - Perfect 16-byte boundary)
+  int blendWithInput;     // [14] 4 bytes - Blend dots over input instead of paper (Block 4: 16b aligned)
+  int enableAntialias;    // [15] 4 bytes - Boolean flag: apply structural antialiasing
+  float aaEdgeWidth;      // [16] 4 bytes - Antialiasing edge blend width (in pixels)
+  int dotShape;           // [17] 4 bytes - Dot shape enum (0: Circle, 1: Square, 2: Diamond)
+  float rgbShift;         // [18] 4 bytes - Color plate misalignment strength (in pixels)
+  float gridStaggerX;     // [19] 4 bytes - X-axis offset multiplier for odd rows (Block 5: 16b aligned)
+  int mappingMode;        // [20] 4 bytes - 0: Off, 1: Luma (16 slots), 2: NearestNeighbor
+  int paletteSize;        // [21] 4 bytes - Current number of active colors in palette
+  float lineAngle;        // [22] 4 bytes - Hatching line angle in degrees
+  float cellBasePitch;    // [23] 4 bytes - Reference base pitch for dot sizing (Block 6: 16b aligned)
+  float cellPitchX;       // [24] 4 bytes - Adjusted grid spacing X
+  float cellPitchY;       // [25] 4 bytes - Adjusted grid spacing Y
+  int _padding4[2];       // [26-27] 8 bytes - Force alignment to 16-byte boundary (112 bytes total)
   float themePalette[128]; // [28-155] 512 bytes - RGBA palette (Starts at 112b. Aligned.)
 ]]
 
@@ -725,7 +714,6 @@ __DEVICE__ float checkCellDot(
 
         if (dotShape == 0) { // Circle
             const float dist = _hypotf(measureDiff.x, measureDiff.y);
-            const float radiusSq = dotRadius * dotRadius;
 
             if (aaEdgeWidth <= 0.0f) {
                 return (dist <= dotRadius) ? 1.0f : 0.0f;
@@ -942,37 +930,26 @@ __KERNEL__ void RenderDotsKernel(
 
     const float2 pixelPos = to_float2((float)x, (float)y);
 
-    // Compute cell dimensions
-    const float width = (float)params->srcSize[0];
-    const float cellBasePitch = _fmaxf(3.0f, _floorf(width / params->screenDensity));
-    // Distort entire grid resolution appropriately for the target aspect ratio
-    const float gridAspect = params->aspectRatio;
-    float cx = cellBasePitch;
-    float cy = cellBasePitch * params->gridSpacingY;
-    if (gridAspect > 1.0f) {
-        cx /= gridAspect;
-    } else if (gridAspect < 1.0f) {
-        cy *= gridAspect;
-    }
-    const float2 cellPitch = to_float2(_fmaxf(3.0f, _floorf(cx)), _fmaxf(3.0f, _floorf(cy)));
+    // Use the Pitch values calculated on the CPU
+    const float cellBasePitch = params->cellBasePitch;
+    const float2 cellPitch = to_float2(params->cellPitchX, params->cellPitchY);
 
     const float aaEdgeWidth = (params->enableAntialias != 0) ? params->aaEdgeWidth : 0.0f;
 
     const float yOffset = cellPitch.y * 0.5f;
-    const float avgCellSize = (cellPitch.x + cellPitch.y) * 0.5f;
-    const int isHighDensity = avgCellSize < MIN_CHECK_RADIUS ? 1 : 0;
-
-    const int baseRowY = (int)((pixelPos.y + yOffset) / cellPitch.y);
-    const int isOddRow = (baseRowY % 2 != 0) ? 1 : 0;
-
     const float2 halfCellPitch = cellPitch * 0.5f;
+    const float avgCellSize = (cellPitch.x + cellPitch.y) * 0.5f;
+    const int isHighDensity = (avgCellSize < MIN_CHECK_RADIUS) ? 1 : 0;
+
+    const int mainCellY = (int)_floorf((pixelPos.y + yOffset) / cellPitch.y);
+    const int isOddRow = (mainCellY % 2 != 0) ? 1 : 0;
 
     float adjustedX = pixelPos.x;
-    if (isOddRow != 0 && params->dotShape != 1) {
-        adjustedX += halfCellPitch.x;
+    if (isOddRow != 0) {
+        adjustedX += halfCellPitch.x * params->gridStaggerX;
     }
+
     const int mainCellX = (int)_floorf(adjustedX / cellPitch.x);
-    const int mainCellY = baseRowY;
     const float2 mainCellPos = to_float2((float)mainCellX, (float)mainCellY);
 
     const float2 cellGridNum = to_float2(
@@ -1110,6 +1087,24 @@ function Create()
         INPID_InputControl = "CheckboxControl",
         INP_Default = 0.0,
         INPS_StatusText = "When enabled, brighter areas of the image generate larger dots (Subtractive Mode)",
+    })
+
+    InMarginX = self:AddInput("Margin X", "MarginX", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "SliderControl",
+        INP_Default = 0.0,
+        INP_MinAllowed = -5.0,
+        INP_MaxAllowed = 5.0,
+        INPS_StatusText = "Adjusts the horizontal gap between dots without changing dot size",
+    })
+
+    InMarginY = self:AddInput("Margin Y", "MarginY", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "SliderControl",
+        INP_Default = 0.0,
+        INP_MinAllowed = -5.0,
+        INP_MaxAllowed = 5.0,
+        INPS_StatusText = "Adjusts the vertical gap between dots without changing dot size",
     })
     self:EndControlNest();
 
@@ -1490,6 +1485,7 @@ A high-performance halftone simulation Fuse for DaVinci Resolve.
 
 [Key Features]
 - Hexagonal Grid & Custom Shapes (Circle, Square, Diamond)
+- Dot Spacing (Margin) Adjustment
 - Global Pattern Line Hatching & Crosshatching
 - Professional Engraving Shadow Logic
 - Analog Jitter (Position, Size, Aspect)
@@ -1545,6 +1541,8 @@ function Process(req)
     local blendWithInput = InBlendWithInput:GetValue(req).Value > 0.5 and 1 or 0
     local dotShape = floor(InDotShape:GetValue(req).Value + 0.5)
     local staggerSquares = InStaggerSquareDots:GetValue(req).Value > 0.5
+    local marginX = InMarginX:GetValue(req).Value
+    local marginY = InMarginY:GetValue(req).Value
 
     -- Color Components
     local paperR = InPaperColorRed:GetValue(req).Value
@@ -1569,8 +1567,9 @@ function Process(req)
     if aspectRatio > 1.0 then cx = cx / aspectRatio
     elseif aspectRatio < 1.0 then cy = cy * aspectRatio end
 
-    local cellPitchX = max(3.0, floor(cx))
-    local cellPitchY = max(3.0, floor(cy))
+    -- Apply Spacing Margin (Gap adjustment)
+    local cellPitchX = max(3.0, floor(cx + marginX * cellBasePitch))
+    local cellPitchY = max(3.0, floor(cy + marginY * cellBasePitch))
 
     local averageCellPitch = (cellPitchX + cellPitchY) * 0.5
     local aaEdgeWidth = enableDotAntialias and (aaEdgeSoftness * averageCellPitch) or 0.0
@@ -1610,7 +1609,6 @@ function Process(req)
         params.srcSize[1] = height
         params.dstSize[0] = cellGridNumX
         params.dstSize[1] = cellGridNumY
-        params.screenDensity = screenDensity
         params.contrast = contrast
         params.aspectRatio = aspectRatio
         params.dotGain = dotGain
@@ -1625,8 +1623,10 @@ function Process(req)
         params.invertMode = invertMode > 0.5 and 1 or 0
         params.brightnessCutoff = brightnessCutoff
         params.useOriginalColor = useOriginalColor
-        params.gridSpacingY = gridSpacingY
         params.gridStaggerX = gridStaggerX
+        params.cellPitchX = cellPitchX
+        params.cellPitchY = cellPitchY
+        params.cellBasePitch = cellBasePitch
 
         cellInfoNode:SetParamBlock(params)
         cellInfoNode:AddSampler("RowSampler", TEX_FILTER_MODE_POINT, TEX_ADDRESS_MODE_CLAMP,
@@ -1665,15 +1665,14 @@ function Process(req)
         params.dotColor[3] = dotA
         params.useOriginalColor = useOriginalColor
         params.colorReduction = colorReduction
-        params.screenDensity = screenDensity
         params.enableAntialias = (enableDotAntialias and 1 or 0)
         params.aaEdgeWidth = aaEdgeWidth
         params.dotShape = dotShape
-        params.aspectRatio = aspectRatio
         params.rgbShift = rgbShift
-        params.gridSpacingY = gridSpacingY
         params.gridStaggerX = gridStaggerX
         params.lineAngle = lineAngle
+        params.cellPitchX = cellPitchX
+        params.cellPitchY = cellPitchY
         params.cellBasePitch = cellBasePitch
         -- Transfer palette data for hardware themes
         local theme = ColorThemes[colorReduction + 1]
