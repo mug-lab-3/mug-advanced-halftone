@@ -31,7 +31,7 @@ created using this Fuse. Feel free to use it for both commercial and non-commerc
 ShowCellInfo = false
 
 -- Set version globally for easy maintenance
-VERSION = 1.95
+VERSION = 1.96
 
 --******************************************************************************************************
 FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
@@ -1104,6 +1104,13 @@ function Create()
         INP_MaxAllowed = 1.0,
         INPS_StatusText = "Adjusts the contrast of the halftone pattern (-1.0 to 1.0 mapped to 0.25x to 4x)",
     })
+
+    InInvertMode = self:AddInput("Invert Brightness", "InvertMode", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "CheckboxControl",
+        INP_Default = 0.0,
+        INPS_StatusText = "When enabled, brighter areas of the image generate larger dots (Subtractive Mode)",
+    })
     self:EndControlNest();
 
     self:BeginControlNest("Dot Shape", "DotShapeNest", true);
@@ -1185,12 +1192,6 @@ function Create()
         INPS_StatusText = "Controls the maximum size of dots in the halftone pattern",
     })
 
-    InInvertMode = self:AddInput("Invert Brightness", "InvertMode", {
-        LINKID_DataType = "Number",
-        INPID_InputControl = "CheckboxControl",
-        INP_Default = 0.0,
-        INPS_StatusText = "When enabled, brighter areas of the image generate larger dots (Subtractive Mode)",
-    })
 
     InBrightnessCutoff = self:AddInput("Brightness Cutoff", "BrightnessCutoff", {
         LINKID_DataType = "Number",
