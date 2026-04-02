@@ -31,7 +31,7 @@ created using this Fuse. Feel free to use it for both commercial and non-commerc
 ShowCellInfo = false
 
 -- Set version globally for easy maintenance
-VERSION = 2.00
+VERSION = 2.10
 
 --******************************************************************************************************
 FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
@@ -1123,13 +1123,13 @@ function Create()
         INPS_StatusText = "Select the shape of the halftone dots",
     })
 
-    InStaggerSquareDots = self:AddInput("Stagger Square Dots", "StaggerSquareDots", {
+    InStaggerDots = self:AddInput("Staggered Grid", "StaggerSquareDots", {
         LINKID_DataType = "Number",
         INPID_InputControl = "CheckboxControl",
         INP_Default = 1.0,
         INP_Integer = true,
         IC_Visible = false,
-        INPS_StatusText = "Applies a brick-like staggered layout to square dots",
+        INPS_StatusText = "Applies a brick-like staggered layout to dots",
     })
         
     InLineAngle = self:AddInput("Line Angle", "LineAngle", {
@@ -1540,7 +1540,7 @@ function Process(req)
     local colorReduction = floor(InColorReduction:GetValue(req).Value + 0.5)
     local blendWithInput = InBlendWithInput:GetValue(req).Value > 0.5 and 1 or 0
     local dotShape = floor(InDotShape:GetValue(req).Value + 0.5)
-    local staggerSquares = InStaggerSquareDots:GetValue(req).Value > 0.5
+    local staggerDots = InStaggerDots:GetValue(req).Value > 0.5
     local marginX = InMarginX:GetValue(req).Value
     local marginY = InMarginY:GetValue(req).Value
 
@@ -1559,8 +1559,13 @@ function Process(req)
 
     -- Calculate geometry rules
     local SIN60 = 0.866025
-    local gridSpacingY = (dotShape == 1) and 1.0 or SIN60
-    local gridStaggerX = (dotShape == 1) and (staggerSquares and 1.0 or 0.0) or 1.0
+    local gridSpacingY = SIN60
+    local gridStaggerX = 1.0
+    if dotShape <= 2 then
+        -- Circle, Square, Diamond support both orthogonal and staggered grids
+        gridSpacingY = staggerDots and SIN60 or 1.0
+        gridStaggerX = staggerDots and 1.0 or 0.0
+    end
 
     local cellBasePitch = floor(max(3.0, width / screenDensity))
     local cx, cy = cellBasePitch, cellBasePitch * gridSpacingY
@@ -1745,10 +1750,10 @@ function NotifyChanged(inp, param, time)
     end
     if inp == InDotShape then
         local shape = math.floor(param.Value + 0.5)
-        if shape == 1 then
-            InStaggerSquareDots:SetAttrs({IC_Visible = true})
+        if shape <= 2 then
+            InStaggerDots:SetAttrs({IC_Visible = true})
         else
-            InStaggerSquareDots:SetAttrs({IC_Visible = false})
+            InStaggerDots:SetAttrs({IC_Visible = false})
         end
 
         if shape == 3 or shape == 4 then
