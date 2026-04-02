@@ -1484,7 +1484,7 @@ Mug Advanced Halftone v]] .. tostring(VERSION) .. [[
 A high-performance halftone simulation Fuse for DaVinci Resolve.
 
 [Key Features]
-- Hexagonal Grid & Custom Shapes (Circle, Square, Diamond)
+- Orthogonal & Hexagonal Grid (Circle, Square, Diamond)
 - Dot Spacing (Margin) Adjustment
 - Global Pattern Line Hatching & Crosshatching
 - Professional Engraving Shadow Logic
