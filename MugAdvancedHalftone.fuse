@@ -31,7 +31,7 @@ created using this Fuse. Feel free to use it for both commercial and non-commerc
 ShowCellInfo = false
 
 -- Set version globally for easy maintenance
-VERSION = 2.11
+VERSION = 2.20
 
 --******************************************************************************************************
 FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
@@ -349,19 +349,14 @@ CellInfoKernel = [[
 #define LUMA_R 0.2126f
 #define LUMA_G 0.7152f
 #define LUMA_B 0.0722f
-#define SAMPLING_STEP_THRESHOLD 12.0f  // Increase step size for sampling radius larger than this value
-#define SAMPLING_STEP_LARGE 2          // Decimation rate (step size multiplier) for large radii
+#define SAMPLING_STEP_THRESHOLD 12.0f  // Sampling decimation threshold for large cells
+#define SAMPLING_STEP_LARGE 2          // Decimation rate for large radii
 
-// -- Helper Function: PCG Hash based 3D Hash Function
-// The rendering requires deterministic pseudo-random noise that matches exactly identically across 
-// different GPU APIs (CUDA, Metal, OpenCL, etc). Standard random implementations often drift due 
-// to floating-point precision differences across vendor hardware architectures.
-// Therefore, we use strictly integer-based bitwise operations for the initial high-entropy 
-// avalanching, before mathematically normalizing back into a -1.0 to 1.0 float space.
+// -- Deterministic Integer-based Hash Function (PCG-style)
+// Essential for cross-hardware consistency (NVIDIA/AMD/Metal).
+// Standard float-based random functions often drift across different architectures.
 __DEVICE__ float hash3D(uint x, uint y, uint z, uint seedOffset) {
-    // Strong non-linear hash to eliminate periodicity (Based on Jenkins Hash/PCG patterns)
-    // The seedOffset allows us to reuse the same function for Position, Size, and Aspect, 
-    // yielding completely uncorrelated noise fields for each property.
+    // High-entropy bitwise avalanching to eliminate periodicity
     uint h = x + y * 374761393u + z * 668265263u + seedOffset;
     h += h << 10;
     h ^= h >> 6;
@@ -369,10 +364,11 @@ __DEVICE__ float hash3D(uint x, uint y, uint z, uint seedOffset) {
     h ^= h >> 11;
     h += h << 15;
     
-    // Final mix (PCG style)
+    // PCG-style final permutation mix
     h = (h ^ (h >> 16)) * 2654435761u;
     h = h ^ (h >> 16);
     
+    // Normalize integer hash to [-1.0, 1.0] range
     return (float)(h & 0x00FFFFFF) * (1.0f / (float)0x00FFFFFF) * 2.0f - 1.0f;
 }
 
@@ -392,18 +388,15 @@ __KERNEL__ void CellInfoKernel(
     const uint ux = (uint)x;
     const uint uy = (uint)y;
     
-    // Extract integer part (current/next frame) and fractional part (interpolation ratio) from Jitter Phase.
-    // This allows smoothly animating the random jitter by blending the calculated hash of the current 
-    // integer timeline phase and the next upcoming timeline phase.
+    // -- Continuous Time Interpolation
+    // Blends between two discrete integer phases of the jitter noise to create smooth animation.
     const float phase = params->jitterPhase;
     const float phaseBaseF = _floorf(phase);
     const uint basePhase0 = (uint)phaseBaseF;
     const uint basePhase1 = basePhase0 + 1;
     
-    // Smoothstep curve (3t^2 - 2t^3) for seamless interpolation of random properties.
-    // Using a non-linear cubic curve prevents sudden velocity changes at integer keyframes.
     const float fraction = phase - phaseBaseF;
-    const float t = fraction * fraction * _fmaf(-2.0f, fraction, 3.0f);
+    const float t = fraction * fraction * _fmaf(-2.0f, fraction, 3.0f); // Cubic Hermite interpolation
 
     // Use vectorized mix for interleaved random properties (X, Y, Size, Aspect)
     const float4 r0 = to_float4(
@@ -438,15 +431,14 @@ __KERNEL__ void CellInfoKernel(
     // Dot size (Radius) is derived from basePitch to maintain size while spacing changes
     const float maxCellRadius = (cellBasePitch * 0.5f) * 1.5f;
 
-    // Calculate row offset using branchless bitwise logic
+    // -- Grid Geometry and Center Calculation
+    // Calculates staggered row offsets (for honeycomb grids) and applies randomized position jitter.
     const float rowOffset = (float)(uy & 1u) * (-halfPitchX * params->gridStaggerX);
 
-    // Calculate cell center in pixel coordinates and apply randomized position jitter
     const float jitterAmountX = params->positionJitter * halfPitchX;
     const float jitterAmountY = params->positionJitter * halfPitchY;
 
     const float cellCenterX = _fmaf((float)x, cellPitchX, halfPitchX + rowOffset + (randX * jitterAmountX));
-    // Simplified Y center (halfPitchY - yOffset is zero)
     const float cellCenterY = _fmaf((float)y, cellPitchY, randY * jitterAmountY);
 
     // Define sampling region around the cell to compute average luminance
@@ -501,7 +493,8 @@ __KERNEL__ void CellInfoKernel(
         return;
     }
 
-    // Calculate average color and derive luminance once at the end
+    // -- Post-Sampling Processing
+    // Derives mean luminance from averaged color. Linear weighting allows luma conversion after averaging.
     const float invSampleCount = _frecip((float)sampleCount);
     const float4 avgColor = totalColor * invSampleCount;
     float avgLuma = _fmaf(avgColor.x, LUMA_R, _fmaf(avgColor.y, LUMA_G, avgColor.z * LUMA_B));
@@ -529,6 +522,8 @@ __KERNEL__ void CellInfoKernel(
     const float sizeVariation = 1.0f + (randS * params->sizeJitter * 0.5f); // ±50% scale variation
     tonalValue = _saturatef(tonalValue * sizeVariation);
 
+    // -- Dot Sizing Logic
+    // Maps luminance to dot radius using contrast, gain, and growth curves.
     const int passesBrightness = (invertMode != 0)
         ? (avgLuma >= params->brightnessCutoff ? 1 : 0)
         : (avgLuma <= params->brightnessCutoff ? 1 : 0);
@@ -538,13 +533,15 @@ __KERNEL__ void CellInfoKernel(
         dotRadius = _clampf(tonalValue * maxCellRadius, 0.0f, maxCellRadius * params->clipRadius);
     }
 
+    // -- Rotation Matrix Constants (Pre-calculation)
+    // Pre-calculates sine/cosine and recip-aspect to avoid redundant math in the rendering kernel.
     const float randAngle0 = hash3D(ux, uy, basePhase0, 314159265u);
     const float randAngle1 = hash3D(ux, uy, basePhase1, 314159265u);
     const float randAngle = _mix(randAngle0, randAngle1, t);
+    
     const float finalAngle = randAngle * params->angleJitter * 90.0f;
-    const float angleRad = finalAngle * (3.14159265f / 180.0f);
-    const float cosA = _cosf(angleRad);
-    const float sinA = _sinf(angleRad);
+    const float cosA = _cospif(finalAngle * (1.0f / 180.0f));
+    const float sinA = _sinpif(finalAngle * (1.0f / 180.0f));
     const float recipAspect = _frecip(_fmaxf(0.01f, finalAspect));
 
     // dst_info1 (Geometry): [CenterX, CenterY, Radius, Aspect]
@@ -730,9 +727,9 @@ __DEVICE__ float checkCellDot(
             return _saturatef((dotRadius - dist) / aaEdgeWidth);
         } else if (dotShape == 3 || dotShape == 4) { // Line or Crosshatch
             // Global parallel line pattern
-            const float angleRad = params->lineAngle * (3.14159265f / 180.0f);
-            const float nx = _sinf(angleRad);
-            const float ny = -_cosf(angleRad);
+            const float lineAngleNorm = params->lineAngle * (1.0f / 180.0f);
+            const float nx = _sinpif(lineAngleNorm);
+            const float ny = -_cospif(lineAngleNorm);
             
             // Project pixel position onto the line normal for global phase
             const float proj1 = _fmaf(pixelPos.x, nx, pixelPos.y * ny);
@@ -752,8 +749,8 @@ __DEVICE__ float checkCellDot(
             }
             
             if (dotShape == 4) { // Crosshatch
-                const float nx2 = _cosf(angleRad);
-                const float ny2 = _sinf(angleRad);
+                const float nx2 = _cospif(lineAngleNorm);
+                const float ny2 = _sinpif(lineAngleNorm);
                 const float proj2 = _fmaf(pixelPos.x, nx2, pixelPos.y * ny2);
                 const float phase2 = proj2 - _floorf(_fdivide(proj2, pitch)) * pitch;
                 const float dist2 = _fabs(phase2 - pitch * 0.5f);
