@@ -405,23 +405,24 @@ __KERNEL__ void CellInfoKernel(
     const float fraction = phase - phaseBaseF;
     const float t = fraction * fraction * _fmaf(-2.0f, fraction, 3.0f);
 
-    // For each random parameter, calculate values at the current and next integer phases, and linearly interpolate them using t
-    // Changing the seedOffset gives completely different random sequences for Position (X, Y), Size (S), and Aspect (Aspect)
-    const float randX0 = hash3D(ux, uy, basePhase0, 0u);
-    const float randX1 = hash3D(ux, uy, basePhase1, 0u);
-    const float randX = _mix(randX0, randX1, t);
-
-    const float randY0 = hash3D(ux, uy, basePhase0, 10007u);
-    const float randY1 = hash3D(ux, uy, basePhase1, 10007u);
-    const float randY = _mix(randY0, randY1, t);
-
-    const float randS0 = hash3D(ux, uy, basePhase0, 9973u);
-    const float randS1 = hash3D(ux, uy, basePhase1, 9973u);
-    const float randS = _mix(randS0, randS1, t);
-
-    const float randAspect0 = hash3D(ux, uy, basePhase0, 2191590403u);
-    const float randAspect1 = hash3D(ux, uy, basePhase1, 2191590403u);
-    const float randAspect = _mix(randAspect0, randAspect1, t);
+    // Use vectorized mix for interleaved random properties (X, Y, Size, Aspect)
+    const float4 r0 = to_float4(
+        hash3D(ux, uy, basePhase0, 0u),          // Position X
+        hash3D(ux, uy, basePhase0, 10007u),      // Position Y
+        hash3D(ux, uy, basePhase0, 9973u),       // Size
+        hash3D(ux, uy, basePhase0, 2191590403u)  // Aspect
+    );
+    const float4 r1 = to_float4(
+        hash3D(ux, uy, basePhase1, 0u),
+        hash3D(ux, uy, basePhase1, 10007u),
+        hash3D(ux, uy, basePhase1, 9973u),
+        hash3D(ux, uy, basePhase1, 2191590403u)
+    );
+    const float4 r = _mix(r0, r1, t);
+    const float randX = r.x;
+    const float randY = r.y;
+    const float randS = r.z;
+    const float randAspect = r.w;
 
     // Fluctuation range of aspect ratio is symmetric vertically and horizontally (0.25x to 4.0x)
     const float aspectMultiplier = _exp2f(params->aspectJitter * randAspect * 2.0f);
@@ -437,18 +438,16 @@ __KERNEL__ void CellInfoKernel(
     // Dot size (Radius) is derived from basePitch to maintain size while spacing changes
     const float maxCellRadius = (cellBasePitch * 0.5f) * 1.5f;
 
-    const float yOffset = halfPitchY;
-
-    // Calculate row offset based on multiplier matching dot shape (provided by CPU)
-    const int isOddRow = (y % 2 != 0) ? 1 : 0;
-    const float rowOffset = (isOddRow != 0) ? (-halfPitchX * params->gridStaggerX) : 0.0f;
+    // Calculate row offset using branchless bitwise logic
+    const float rowOffset = (float)(uy & 1u) * (-halfPitchX * params->gridStaggerX);
 
     // Calculate cell center in pixel coordinates and apply randomized position jitter
     const float jitterAmountX = params->positionJitter * halfPitchX;
     const float jitterAmountY = params->positionJitter * halfPitchY;
 
     const float cellCenterX = _fmaf((float)x, cellPitchX, halfPitchX + rowOffset + (randX * jitterAmountX));
-    const float cellCenterY = _fmaf((float)y, cellPitchY, halfPitchY - yOffset + (randY * jitterAmountY));
+    // Simplified Y center (halfPitchY - yOffset is zero)
+    const float cellCenterY = _fmaf((float)y, cellPitchY, randY * jitterAmountY);
 
     // Define sampling region around the cell to compute average luminance
     const int samplingRadius = (int)(halfPitchX);
@@ -456,11 +455,9 @@ __KERNEL__ void CellInfoKernel(
 
     // Dynamic adjustment of sampling step size
     const int sampleStep = ((float)samplingRadius > SAMPLING_STEP_THRESHOLD) ? SAMPLING_STEP_LARGE : 1;
-    const float sampleStepSquared = (float)(sampleStep * sampleStep); // Pre-calculated
 
-    float totalLuma = 0.0f;
     int sampleCount = 0;
-    float4 avgColor = to_float4(0.0f, 0.0f, 0.0f, 0.0f);
+    float4 totalColor = to_float4(0.0f, 0.0f, 0.0f, 0.0f);
 
     // Compute loop bounds with image boundary checks for efficiency
     const float fSamplingRadius = (float)samplingRadius;
@@ -476,16 +473,12 @@ __KERNEL__ void CellInfoKernel(
         return;
     }
 
-    // Sample pixels within the cell bounding box using circular sampling logic
-    const int sampleStepInt = sampleStep * sampleStep;
-
     // Loop dynamically over the bounding box calculated from the cell center
     for (int pixelY = minY; pixelY <= maxY; pixelY += sampleStep) {
         const float dy = (float)pixelY - cellCenterY;
         const float dySquared = dy * dy;
 
         // Early vertical distance cutoff checking (Circular bound check)
-        // If the current row's perpendicular distance is already further than the radius, skip horizontal checks.
         if (dySquared > radiusSquared) continue;
 
         // Pre-calculate maximum horizontal range within the circular bounds
@@ -495,15 +488,9 @@ __KERNEL__ void CellInfoKernel(
         const int localMaxX = min(maxX, (int)(cellCenterX + maxDx));
 
         for (int pixelX = localMinX; pixelX <= localMaxX; pixelX += sampleStep) {
-            const float4 color = _tex2DVec4(src, (float)pixelX, (float)pixelY);
-
-            // Compute perceptual luminance using nested fma for optimization
-            const float luma = _fmaf(color.x, LUMA_R, _fmaf(color.y, LUMA_G, color.z * LUMA_B));
-
-            // Accumulate luminance and color
-            totalLuma = _fmaf(luma, sampleStepSquared, totalLuma);
-            sampleCount += sampleStepInt;
-            avgColor += color * sampleStepSquared;
+            // Accumulate color only (Luma is computed later via linearity)
+            totalColor += _tex2DVec4(src, (float)pixelX, (float)pixelY);
+            sampleCount++;
         }
     }
 
@@ -514,12 +501,10 @@ __KERNEL__ void CellInfoKernel(
         return;
     }
 
-    // Calculate average luminance and color
-    const float invSampleCount = (sampleCount > 0) ? _frecip((float)sampleCount) : 0.0f;
-    float avgLuma = totalLuma * invSampleCount;
-
-    // Average color calculation
-    avgColor *= invSampleCount;
+    // Calculate average color and derive luminance once at the end
+    const float invSampleCount = _frecip((float)sampleCount);
+    const float4 avgColor = totalColor * invSampleCount;
+    float avgLuma = _fmaf(avgColor.x, LUMA_R, _fmaf(avgColor.y, LUMA_G, avgColor.z * LUMA_B));
 
     // Apply contrast enhancement
     avgLuma = _fmaf(avgLuma - 0.5f, params->contrast, 0.5f);
