@@ -31,7 +31,7 @@ created using this Fuse. Feel free to use it for both commercial and non-commerc
 ShowCellInfo = false
 
 -- Set version globally for easy maintenance
-VERSION = 2.30
+VERSION = 2.33
 
 --******************************************************************************************************
 FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
@@ -404,6 +404,9 @@ __KERNEL__ void CellInfoKernel(
     // -------------------------------------------------------------------------
     // -- Step 1: Geometry Setup and Jitter Generation
     // -------------------------------------------------------------------------
+    const int srcW = params->srcSize[0];
+    const int srcH = params->srcSize[1];
+    
     const float phase = params->jitterPhase;
     const float phaseBaseF = _floorf(phase);
     const uint b0 = (uint)phaseBaseF;
@@ -427,39 +430,46 @@ __KERNEL__ void CellInfoKernel(
     const float cellCY = _fmaf((float)y, pitchY, (rnd.y * params->positionJitter * halfY));
 
     // -------------------------------------------------------------------------
-    // -- Step 2: Adaptive Area Sampling
+    // -- Step 2: Adaptive Area Sampling (Elliptical Area)
     // -------------------------------------------------------------------------
-    const float radiusSQ = halfX * halfX;
     const int step = ((float)halfX > SAMPLING_STEP_THRESHOLD) ? SAMPLING_STEP_LARGE : 1;
 
     int count = 0;
     float4 sumCol = to_float4(0.0f, 0.0f, 0.0f, 0.0f);
 
+    // Dynamic sampling bounds based on cell pitch
     const int minX = max(0, (int)(cellCX - halfX));
-    const int maxX = min(params->srcSize[0] - 1, (int)(cellCX + halfX));
-    const int minY = max(0, (int)(cellCY - halfX));
-    const int maxY = min(params->srcSize[1] - 1, (int)(cellCY + halfX));
+    const int maxX = min(srcW - 1, (int)(cellCX + halfX));
+    const int minY = max(0, (int)(cellCY - halfY));
+    const int maxY = min(srcH - 1, (int)(cellCY + halfY));
 
     if (minX <= maxX && minY <= maxY) {
-        for (int py = minY; py <= maxY; py += step) {
-            const float dySQ = (float)((float)py - cellCY) * ((float)py - cellCY);
-            if (dySQ > radiusSQ) continue;
+        const float invHalfYSQ = _frecip(_fmaxf(1e-4f, halfY * halfY));
 
-            const float dxRange = _sqrtf(radiusSQ - dySQ);
-            const int lx = max(minX, (int)(cellCX - dxRange));
-            const int rx = min(maxX, (int)(cellCX + dxRange));
+        for (int py = minY; py <= maxY; py += step) {
+            const float dy = (float)py - cellCY;
+            const float dyNormSQ = dy * dy * invHalfYSQ;
+            if (dyNormSQ > 1.0f) continue;
+
+            const float dxMax = halfX * _sqrtf(1.0f - dyNormSQ);
+            const int lx = max(minX, (int)(cellCX - dxMax));
+            const int rx = min(maxX, (int)(cellCX + dxMax));
 
             for (int px = lx; px <= rx; px += step) {
-                sumCol += _tex2DVec4(src, (float)px, (float)py);
+                sumCol += _tex2DVec4(src, (float)px + 0.5f, (float)py + 0.5f);
                 count++;
             }
         }
     }
 
-    // Fast-path for empty samples or error cases
+    // Edge-aware fallback for off-screen cells to avoid "black fringe"
     if (count == 0) {
+        const float clampX = _clampf(cellCX, 0.0f, (float)srcW - 1.0f);
+        const float clampY = _clampf(cellCY, 0.0f, (float)srcH - 1.0f);
+        const float4 edgeColor = _tex2DVec4(src, clampX + 0.5f, clampY + 0.5f);
+        
         _tex2DVec4Write(dst_info1, x, y, to_float4(cellCX, cellCY, 0.0f, finalAspect));
-        _tex2DVec4Write(dst_info2, x, y, to_float4(0.0f, 0.0f, 0.0f, 1.0f));
+        _tex2DVec4Write(dst_info2, x, y, edgeColor);
         return;
     }
 
@@ -475,6 +485,10 @@ __KERNEL__ void CellInfoKernel(
     
     // Growth Determination (Invert, Gain, Curve)
     float tonalValue = (invertMode != 0) ? contrastLuma : (1.0f - contrastLuma);
+    
+    // Alpha Weighting: Suppress dots in transparent areas to avoid edge artifacts
+    tonalValue *= avgColor.w;
+    
     tonalValue = _saturatef(tonalValue + params->dotGain);
     if (params->dotCurve != 1.0f) {
         tonalValue = _powf(_saturatef(tonalValue), _fmaxf(params->dotCurve, 1e-4f));
@@ -875,7 +889,10 @@ __KERNEL__ void RenderDotsKernel(
 {
     DEFINE_KERNEL_ITERATORS_XY(x, y);
 
-    if (x >= params->srcSize[0] || y >= params->srcSize[1])
+    const int srcW = params->srcSize[0];
+    const int srcH = params->srcSize[1];
+    
+    if (x >= srcW || y >= srcH)
         return;
 
     const float2 pixelPos = to_float2((float)x, (float)y);
@@ -884,7 +901,9 @@ __KERNEL__ void RenderDotsKernel(
     // -- Step 1: Grid Mapping
     // -------------------------------------------------------------------------
     const float cellBasePitch = params->cellBasePitch;
-    const float2 cellPitch = to_float2(params->cellPitchX, params->cellPitchY);
+    const float pitchX = params->cellPitchX;
+    const float pitchY = params->cellPitchY;
+    const float2 cellPitch = to_float2(pitchX, pitchY);
     const float2 halfPitch = cellPitch * 0.5f;
 
     // Calculate which cell index the current pixel belongs to
@@ -915,8 +934,8 @@ __KERNEL__ void RenderDotsKernel(
 
     // If "Blend with Input" is enabled, sample the source image as the background
     if (blendIn != 0) {
-        const float px = (float)x / (float)params->srcSize[0];
-        const float py = (float)y / (float)params->srcSize[1];
+        const float px = ((float)x + 0.5f) / (float)srcW;
+        const float py = ((float)y + 0.5f) / (float)srcH;
 
         if (shiftVal == 0.0f) {
             backgroundImage = _tex2DVec4(src_img, px, py);
