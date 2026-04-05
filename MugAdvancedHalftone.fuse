@@ -31,7 +31,7 @@ created using this Fuse. Feel free to use it for both commercial and non-commerc
 ShowCellInfo = false
 
 -- Set version globally for easy maintenance
-VERSION = 2.20
+VERSION = 2.21
 
 --******************************************************************************************************
 FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
@@ -800,67 +800,76 @@ struct BestCellState {
 };
 
 // Evaluates a candidate cell and updates the best cell state.
-__DEVICE__ void updateBestCell(
-    const float2 candidatePos,
+__DEVICE__ void evaluateCandidateCell(
+    const float2 candidateGridPos,
     const float2 pixelPos,
-    const float2 cellGridNum,
-    __TEXTURE2D__ cell_info1,
-    __TEXTURE2D__ cell_info2,
-    __TEXTURE2D__ cell_info3,
+    const float2 cellGridDim,
+    __TEXTURE2D__ geometryBuffer,
+    __TEXTURE2D__ colorBuffer,
+    __TEXTURE2D__ contextBuffer,
     const float aaEdgeWidth,
     const int dotShape,
-    const float4 userDotColor,
+    const float4 defaultDotColor,
     const int useOriginalColorFlag,
     const int colorReduction,
-    const int blendWithInput,
     const float shiftVal,
     __CONSTANTREF__ RenderParams *params,
     struct BestCellState *state,
     const float cellBasePitch)
 {
-    const float coverageCandidate = checkCellDot(candidatePos, pixelPos, cellGridNum, cell_info1, cell_info3, aaEdgeWidth, dotShape, params, cellBasePitch);
-    if (coverageCandidate > 0.0f) {
-        float4 candidateDotColor = userDotColor;
-        float candidateStrength = coverageCandidate;
-        if (useOriginalColorFlag != 0) {
-            const float2 invGrid = to_float2(_frecip((float)cellGridNum.x), _frecip((float)cellGridNum.y));
-            const float2 baseUV = (candidatePos + to_float2(0.5f, 0.5f)) * invGrid;
-            
-            if (shiftVal == 0.0f) {
-                candidateDotColor = _tex2DVec4(cell_info2, baseUV.x, baseUV.y);
-            } else {
-                float2 cellShiftROFF, cellShiftBOFF;
-                calculateRadialShift(baseUV, shiftVal, &cellShiftROFF, &cellShiftBOFF);
+    // Retrieve dot geometry (center, radius, aspect) from the intermediate buffers
+    const float coverage = checkCellDot(candidateGridPos, pixelPos, cellGridDim, geometryBuffer, contextBuffer, aaEdgeWidth, dotShape, params, cellBasePitch);
+    if (coverage <= 0.0f) return;
 
-                const float4 cR = _tex2DVec4(cell_info2, baseUV.x + cellShiftROFF.x, baseUV.y + cellShiftROFF.y);
-                const float4 cG = _tex2DVec4(cell_info2, baseUV.x, baseUV.y);
-                const float4 cB = _tex2DVec4(cell_info2, baseUV.x + cellShiftBOFF.x, baseUV.y + cellShiftBOFF.y);
-                candidateDotColor = to_float4(cR.x, cG.y, cB.z, cG.w);
-            }
-            if (colorReduction > 0) {
-                candidateDotColor = applyColorReduction(candidateDotColor, colorReduction, params);
-            }
-            candidateDotColor.w = userDotColor.w;
+    // Determine the final dot color and its selection strength
+    float4 dotColor = defaultDotColor;
+    float selectionStrength = coverage;
 
-            const float luma = _fmaf(candidateDotColor.x, LUMA_R, _fmaf(candidateDotColor.y, LUMA_G, candidateDotColor.z * LUMA_B));
-            candidateStrength *= _fmaxf(1.0f - luma, 0.0f);
+    if (useOriginalColorFlag != 0) {
+        // Sample color from the source image buffer at the candidate's cell position
+        const float2 invGrid = to_float2(_frecip((float)cellGridDim.x), _frecip((float)cellGridDim.y));
+        const float2 uv = (candidateGridPos + to_float2(0.5f, 0.5f)) * invGrid;
+        
+        if (shiftVal == 0.0f) {
+            dotColor = _tex2DVec4(colorBuffer, uv.x, uv.y);
+        } else {
+            // Apply radial chromatic aberration sampling if active
+            float2 rOffset, bOffset;
+            calculateRadialShift(uv, shiftVal, &rOffset, &bOffset);
+
+            const float4 cR = _tex2DVec4(colorBuffer, uv.x + rOffset.x, uv.y + rOffset.y);
+            const float4 cG = _tex2DVec4(colorBuffer, uv.x, uv.y);
+            const float4 cB = _tex2DVec4(colorBuffer, uv.x + bOffset.x, uv.y + bOffset.y);
+            dotColor = to_float4(cR.x, cG.y, cB.z, cG.w);
         }
 
-        const float diff = candidateStrength - state->bestStrength;
-        if (diff > 1e-4f || (_fabs(diff) <= 1e-4f && coverageCandidate > state->bestCoverage)) {
-            state->bestStrength = candidateStrength;
-            state->bestCoverage = coverageCandidate;
-            state->bestDotColor = candidateDotColor;
+        if (colorReduction > 0) {
+            dotColor = applyColorReduction(dotColor, colorReduction, params);
         }
+        
+        // Ensure transparency follows the UI setting (userAlpha)
+        dotColor.w = defaultDotColor.w;
+
+        // Weight strength by luminance: darker spots on light paper should be prioritized if overlapping
+        const float luma = _fmaf(dotColor.x, LUMA_R, _fmaf(dotColor.y, LUMA_G, dotColor.z * LUMA_B));
+        selectionStrength *= _fmaxf(1.0f - luma, 0.0f);
+    }
+
+    // Update the winner if this candidate is more 'prominent' than current best
+    const float diff = selectionStrength - state->bestStrength;
+    if (diff > 1e-4f || (_fabs(diff) <= 1e-4f && coverage > state->bestCoverage)) {
+        state->bestStrength = selectionStrength;
+        state->bestCoverage = coverage;
+        state->bestDotColor = dotColor;
     }
 }
 
 
 __KERNEL__ void RenderDotsKernel(
     __CONSTANTREF__ RenderParams *params,
-    __TEXTURE2D__ cell_info1,
-    __TEXTURE2D__ cell_info2,
-    __TEXTURE2D__ cell_info3,
+    __TEXTURE2D__ geometryBuffer,
+    __TEXTURE2D__ colorBuffer,
+    __TEXTURE2D__ contextBuffer,
     __TEXTURE2D__ src_img,
     __TEXTURE2D_WRITE__ dst)
 {
@@ -871,127 +880,127 @@ __KERNEL__ void RenderDotsKernel(
 
     const float2 pixelPos = to_float2((float)x, (float)y);
 
-    // Use the Pitch values calculated on the CPU
+    // -------------------------------------------------------------------------
+    // -- Step 1: Grid Mapping
+    // -------------------------------------------------------------------------
     const float cellBasePitch = params->cellBasePitch;
     const float2 cellPitch = to_float2(params->cellPitchX, params->cellPitchY);
+    const float2 halfPitch = cellPitch * 0.5f;
 
-    const float aaEdgeWidth = (params->enableAntialias != 0) ? params->aaEdgeWidth : 0.0f;
-
-    const float yOffset = cellPitch.y * 0.5f;
-    const float2 halfCellPitch = cellPitch * 0.5f;
-    const float avgCellSize = (cellPitch.x + cellPitch.y) * 0.5f;
-    const int isHighDensity = (avgCellSize < MIN_CHECK_RADIUS);
-
-    const int mainCellY = (int)_floorf((pixelPos.y + yOffset) / cellPitch.y);
-    const int isOddRow  = (mainCellY & 1);
-
-    const float staggerX = halfCellPitch.x * params->gridStaggerX;
+    // Calculate which cell index the current pixel belongs to
+    const int  cellIdxY = (int)_floorf((pixelPos.y + halfPitch.y) / cellPitch.y);
+    const int  isOddRow = (cellIdxY & 1);
+    
+    // Account for staggered grid offset (X-shift applied to odd rows)
+    const float staggerX  = halfPitch.x * params->gridStaggerX;
     const float adjustedX = _fmaf((float)isOddRow, staggerX, pixelPos.x);
+    const int   cellIdxX  = (int)_floorf(adjustedX / cellPitch.x);
+    
+    const float2 mainCellGridPos = to_float2((float)cellIdxX, (float)cellIdxY);
+    const float2 gridDimensions  = to_float2((float)params->cellGridNum[0], (float)params->cellGridNum[1]);
 
-    const int mainCellX = (int)_floorf(adjustedX / cellPitch.x);
-    const float2 mainCellPos = to_float2((float)mainCellX, (float)mainCellY);
-
-    const float2 cellGridNum = to_float2(
-        (float)params->cellGridNum[0],
-        (float)params->cellGridNum[1]
-    );
-
-    // Access paperColor and dotColor as float4 vectors
+    // -------------------------------------------------------------------------
+    // -- Step 2: Input Sampling & Background Setup
+    // -------------------------------------------------------------------------
     const float4 paperColor = *(__CONSTANTREF__ float4 *)params->paperColor;
     const float4 userDotColor = *(__CONSTANTREF__ float4 *)params->dotColor;
     const int useOriginalColorFlag = params->useOriginalColor;
     const int colorReduction = params->colorReduction;
-
-    const float intWidth  = (float)params->srcSize[0];
-    const float intHeight = (float)params->srcSize[1];
     const int blendIn = (params->blendWithInput != 0);
 
+    const float aaEdgeWidth = (params->enableAntialias != 0) ? params->aaEdgeWidth : 0.0f;
     const float shiftVal = _mix(0.0f, params->rgbShift, (float)(blendIn || (useOriginalColorFlag != 0)));
 
-    float4 inputColor = paperColor;
+    float4 backgroundImage = paperColor;
 
+    // If "Blend with Input" is enabled, sample the source image as the background
     if (blendIn != 0) {
-        const float px = (float)x / intWidth;
-        const float py = (float)y / intHeight;
+        const float px = (float)x / (float)params->srcSize[0];
+        const float py = (float)y / (float)params->srcSize[1];
 
         if (shiftVal == 0.0f) {
-            inputColor = _tex2DVec4(src_img, px, py);
+            backgroundImage = _tex2DVec4(src_img, px, py);
         } else {
-            float2 shiftROFF, shiftBOFF;
-            calculateRadialShift(to_float2(px, py), shiftVal, &shiftROFF, &shiftBOFF);
-
-            // Independent RGB offset sampling to simulate misaligned print plates
-            const float4 sR = _tex2DVec4(src_img, px + shiftROFF.x, py + shiftROFF.y);
+            float2 sROFF, sBOFF;
+            calculateRadialShift(to_float2(px, py), shiftVal, &sROFF, &sBOFF);
+            const float4 sR = _tex2DVec4(src_img, px + sROFF.x, py + sROFF.y);
             const float4 sG = _tex2DVec4(src_img, px, py);
-            const float4 sB = _tex2DVec4(src_img, px + shiftBOFF.x, py + shiftBOFF.y);
-            inputColor = to_float4(sR.x, sG.y, sB.z, sG.w);
+            const float4 sB = _tex2DVec4(src_img, px + sBOFF.x, py + sBOFF.y);
+            backgroundImage = to_float4(sR.x, sG.y, sB.z, sG.w);
         }
         if (useOriginalColorFlag != 0 && colorReduction > 0) {
-            inputColor = applyColorReduction(inputColor, colorReduction, params);
+            backgroundImage = applyColorReduction(backgroundImage, colorReduction, params);
         }
     }
 
+    // -------------------------------------------------------------------------
+    // -- Step 3: Candidate Evaluation (Collision Analysis)
+    // -------------------------------------------------------------------------
     struct BestCellState state;
     state.bestCoverage = 0.0f;
     state.bestStrength = -1.0f;
-    state.bestDotColor = _mix(userDotColor, inputColor, (float)(blendIn && (useOriginalColorFlag != 0)));
+    state.bestDotColor = _mix(userDotColor, backgroundImage, (float)(blendIn && (useOriginalColorFlag != 0)));
 
-    updateBestCell(mainCellPos, pixelPos, cellGridNum, cell_info1, cell_info2, cell_info3, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, blendIn, shiftVal, params, &state, cellBasePitch);
+    // First, evaluate the cell directly containing this pixel
+    evaluateCandidateCell(mainCellGridPos, pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, params, &state, cellBasePitch);
 
+    // Coordinate mapping to determine distances to neighboring cell boundaries
     const float2 cellCenter = to_float2(
-        _fmaf((float)mainCellX, cellPitch.x, _fmaf((float)isOddRow, staggerX, halfCellPitch.x)),
-        _fmaf((float)mainCellY, cellPitch.y, halfCellPitch.y)
+        _fmaf((float)cellIdxX, cellPitch.x, _fmaf((float)isOddRow, staggerX, halfPitch.x)),
+        _fmaf((float)cellIdxY, cellPitch.y, halfPitch.y)
     );
-    
     const float2 relPos = pixelPos - cellCenter;
 
-    float2 neighborOffsets[8];
+    // Identify which relative neighbors to check
+    float2 neighbors[8];
     int neighborCount = 0;
-    getNeighborOffsets(isOddRow, params->gridStaggerX, neighborOffsets, &neighborCount);
+    getNeighborOffsets(isOddRow, params->gridStaggerX, neighbors, &neighborCount);
+
+    const float avgCellSize = (cellPitch.x + cellPitch.y) * 0.5f;
+    const int isHighDensity = (avgCellSize < MIN_CHECK_RADIUS);
 
     if (isHighDensity != 0) {
-        // High density logic optimization: branchless mapping
+        // Optimization: In high-density grids, dots rarely overlap across more than one boundary.
+        // We only check the specific neighbors in the quadrant current pixel is closest to.
         int checkIndices[2] = {-1, -1};
         int checkCount = 0;
-        const float2 cellThreshold = halfCellPitch * 0.5f; 
+        const float2 threshold = halfPitch * 0.5f; 
         const float2 absRelPos = to_float2(_fabs(relPos.x), _fabs(relPos.y));
 
-        if (absRelPos.x > cellThreshold.x) {
+        if (absRelPos.x > threshold.x) {
             checkIndices[checkCount++] = (relPos.x > 0.0f) ? 2 : 5;
         }
-
-        if (absRelPos.y > cellThreshold.y) {
+        if (absRelPos.y > threshold.y) {
             checkIndices[checkCount++] = _mix(
                 _mix(1.0f, 5.0f, (float)(relPos.y > 0.0f)),
                 _mix((float)(isOddRow ? 0 : 1), (float)(isOddRow ? 3 : 4), (float)(relPos.y > 0.0f)),
                 (float)(params->gridStaggerX != 0.0f)
             );
-            if (checkCount > 2) checkCount = 2;
+            if (checkCount > 2) checkCount = 2; // Safety cap
         }
 
         for (int i = 0; i < checkCount; i++) {
-            const int index = checkIndices[i];
-            if (index < 0) continue;
-            updateBestCell(mainCellPos + neighborOffsets[index], pixelPos, cellGridNum, cell_info1, cell_info2, cell_info3, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, blendIn, shiftVal, params, &state, cellBasePitch);
+            const int idx = checkIndices[i];
+            if (idx >= 0) evaluateCandidateCell(mainCellGridPos + neighbors[idx], pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, params, &state, cellBasePitch);
         }
     } else {
+        // Broad Search: Required for large dots or loose grids
         for (int i = 0; i < neighborCount; i++) {
-            updateBestCell(mainCellPos + neighborOffsets[i], pixelPos, cellGridNum, cell_info1, cell_info2, cell_info3, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, blendIn, shiftVal, params, &state, cellBasePitch);
+            evaluateCandidateCell(mainCellGridPos + neighbors[i], pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, params, &state, cellBasePitch);
         }
     }
+
+    // -------------------------------------------------------------------------
+    // -- Step 4: Final Compositing
+    // -------------------------------------------------------------------------
+    float4 finalOutput = backgroundImage;
 
     if (state.bestCoverage > 0.0f) {
-        const float4 baseColor = (blendIn != 0) ? inputColor : paperColor;
-        const float4 finalColor = blendDotOver(baseColor, state.bestDotColor, state.bestCoverage);
-        _tex2DVec4Write(dst, x, y, finalColor);
-        return;
-    }
+        // A dot intersection was found and prioritized by the Collision Analysis
+        finalOutput = blendDotOver(backgroundImage, state.bestDotColor, state.bestCoverage);
+    } 
 
-    if (blendIn != 0) {
-        _tex2DVec4Write(dst, x, y, inputColor);
-    } else {
-        _tex2DVec4Write(dst, x, y, paperColor);
-    }
+    _tex2DVec4Write(dst, (int)x, (int)y, finalOutput);
 }
 ]]
 
