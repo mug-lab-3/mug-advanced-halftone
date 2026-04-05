@@ -305,6 +305,11 @@ body {
 <td style="text-align:left">ドットの縦方向の間隔調整</td>
 </tr>
 <tr>
+<td style="text-align:left"></td>
+<td style="text-align:left">Screen Aspect Ratio</td>
+<td style="text-align:left">スクリーンの縦横比（パターン全体の歪み）</td>
+</tr>
+<tr>
 <td style="text-align:left"><strong>Dot Shape</strong></td>
 <td style="text-align:left">Dot Shape</td>
 <td style="text-align:left">ドットの形状</td>
@@ -318,11 +323,6 @@ body {
 <td style="text-align:left"></td>
 <td style="text-align:left">Line Angle</td>
 <td style="text-align:left">線・網線の角度</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Dot Aspect Ratio</td>
-<td style="text-align:left">縦横比（正:縦長 / 負:横長）</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
@@ -430,11 +430,17 @@ You do NOT need to include copyright notices or credits in your video works (ren
 </ul>
 <hr>
 <h2 id="-更新履歴">📜 更新履歴 </h2>
-<h3 id="v210-20260402">v2.10 (2026/04/02) </h3>
+<h3 id="v230-20260405">v2.30 (2026/04/05) </h3>
 <ul>
-<li><strong>新機能</strong>: 円形(Circle)およびダイヤモンド(Diamond)形状においても、ストレート配置（直交格子）が選択可能になりました。</li>
-<li><strong>UI改善</strong>: 設定項目名「Stagger Square Dots」を「Staggered Grid」に変更し、対象の各形状で表示されるように整理しました。</li>
+<li><strong>UI構成の再編</strong>: <code>AspectRatio</code> パラメータを <code>Dot Shape</code> から <code>Global</code> セクションへ移動し、<code>Screen Aspect Ratio</code> に改名しました。これにより、スクリーン全体の密度バランスとしてのアスペクト比調整がより直感的になりました。</li>
 </ul>
+<h3 id="v221-20260405">v2.21 (2026/04/05) </h3>
+<ul>
+<li><strong>パフォーマンス最適化</strong>: GPUカーネルの分岐を排除（<code>_mix</code>活用）し、数学演算（<code>_fmaf</code>等）を組み込み関数へ置き換えることで実行効率を向上。</li>
+<li><strong>保守性向上</strong>: 各カーネルを論理的なステップ（Step 1〜4）に構造化し、コメントによる解説を拡充しました。</li>
+<li><strong>安定性改修</strong>: ホスト側(Fuse)との互換性を確保しつつ、内部演算をベクトル化する最適なバランスへ調整しました。</li>
+</ul>
+<h3 id="v210-20260402">v2.10 (2026/04/02) </h3>
 <hr>
 <h2 id="-リンク">🔗 リンク </h2>
 <ul>
