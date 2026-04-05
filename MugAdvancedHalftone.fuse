@@ -31,7 +31,7 @@ created using this Fuse. Feel free to use it for both commercial and non-commerc
 ShowCellInfo = false
 
 -- Set version globally for easy maintenance
-VERSION = 2.10
+VERSION = 2.11
 
 --******************************************************************************************************
 FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
@@ -39,7 +39,7 @@ FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
     REGS_OpIconString      = "MAH",
     REGS_OpDescription     = "Mug Advanced Halftone",
     REGS_HelpTopic         = "https://x.com/MugLab3",
-    REGS_URL               = "https://www.youtube.com/@MugLabVideoEditing",
+    REGS_URL               = "https://www.youtube.com/@MugLab3",
     REGS_IconID            = "Icons.Tools.Icons.AdvancedHalftone",
     REG_Source_GlobalCtrls = true,
     REG_Source_SizeCtrls   = true,
@@ -324,7 +324,7 @@ CellInfoParams = [[
 ]]
 
 -- Cell Information Calculation Kernel
--- Optimized Intermediate buffer format (2-texture consolidation):
+-- Intermediate buffer format:
 -- float4 cellInfo1 (Geometry):
 --   x: Cell Center X - Actual X position in pixel coordinates
 --   y: Cell Center Y - Actual Y position in pixel coordinates
@@ -332,17 +332,23 @@ CellInfoParams = [[
 --   w: Final Aspect  - Local dot aspect ratio for this individual cell
 --
 -- float4 cellInfo2 (Color):
---   x: Original Color R / Average Color R
---   y: Original Color G / Average Color G
---   z: Original Color B / Average Color B
---   w: Original Color A / Mask Alpha
+--   x: Average Color R
+--   y: Average Color G
+--   z: Average Color B
+--   w: Average Color A (Preserved input alpha)
 --
+-- float4 cellInfo3 (Extra / Rotation):
+--   x: Final Angle   - Randomized rotation angle in degrees
+--   y: Cos(Angle)    - Cached cosine for fast rotation
+--   z: Sin(Angle)    - Cached sine for fast rotation
+--   w: Recip Aspect  - 1.0 / Final Aspect for normalization
 --
 -- * Note: In the rendering kernel, each pixel samples its enclosing cell and neighboring cells for accurate overlap rendering.
+--
 CellInfoKernel = [[
-#define LUMA_R 0.3f
-#define LUMA_G 0.59f
-#define LUMA_B 0.11f
+#define LUMA_R 0.2126f
+#define LUMA_G 0.7152f
+#define LUMA_B 0.0722f
 #define SAMPLING_STEP_THRESHOLD 12.0f  // Increase step size for sampling radius larger than this value
 #define SAMPLING_STEP_LARGE 2          // Decimation rate (step size multiplier) for large radii
 
@@ -591,9 +597,9 @@ RenderParams = [[
 
 RenderDotsKernel = [[
 // Constant definitions
-#define LUMA_R 0.3f
-#define LUMA_G 0.59f
-#define LUMA_B 0.11f
+#define LUMA_R 0.2126f
+#define LUMA_G 0.7152f
+#define LUMA_B 0.0722f
 
 __DEVICE__ float4 applyColorReduction(float4 color, int mode, __CONSTANTREF__ RenderParams *params) {
     const int mappingMode = params->mappingMode;
