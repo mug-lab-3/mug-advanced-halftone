@@ -80,10 +80,10 @@
 | | Invert Brightness | 明暗の反転（Subtractive Mode） |
 | | Margin X | ドットの横方向の間隔調整 |
 | | Margin Y | ドットの縦方向の間隔調整 |
+| | Screen Aspect Ratio | スクリーンの縦横比（パターン全体の歪み） |
 | **Dot Shape** | Dot Shape | ドットの形状 |
 | | Staggered Grid | 千鳥配置（オフでストレート配置） |
 | | Line Angle | 線・網線の角度 |
-| | Dot Aspect Ratio | 縦横比（正:縦長 / 負:横長） |
 | | Dot Gain | ドットの太り |
 | | Dot Size Curve | サイズの成長曲線 |
 | | Cutoff Dot Radius | 描画する最小の半径 |
@@ -126,6 +126,9 @@
 ---
  
 ## 📜 更新履歴
+
+### v2.30 (2026/04/05)
+- **UI構成の再編**: `AspectRatio` パラメータを `Dot Shape` から `Global` セクションへ移動し、`Screen Aspect Ratio` に改名しました。これにより、スクリーン全体の密度バランスとしてのアスペクト比調整がより直感的になりました。
 
 ### v2.21 (2026/04/05)
 - **パフォーマンス最適化**: GPUカーネルの分岐を排除（`_mix`活用）し、数学演算（`_fmaf`等）を組み込み関数へ置き換えることで実行効率を向上。

@@ -31,7 +31,7 @@ created using this Fuse. Feel free to use it for both commercial and non-commerc
 ShowCellInfo = false
 
 -- Set version globally for easy maintenance
-VERSION = 2.21
+VERSION = 2.30
 
 --******************************************************************************************************
 FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
@@ -1036,6 +1036,15 @@ function Create()
         INPS_StatusText = "When enabled, brighter areas of the image generate larger dots (Subtractive Mode)",
     })
 
+    InAspectRatio = self:AddInput("Screen Aspect Ratio", "AspectRatio", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "SliderControl",
+        INP_Default = 0.0,
+        INP_MinAllowed = -1.0,
+        INP_MaxAllowed = 1.0,
+        INPS_StatusText = "Adjusts the aspect ratio of the halftone screen/pattern (-1.0 to 1.0 mapped to 0.25x to 4x)",
+    })
+
     InMarginX = self:AddInput("Margin X", "MarginX", {
         LINKID_DataType = "Number",
         INPID_InputControl = "SliderControl",
@@ -1089,14 +1098,6 @@ function Create()
         INPS_StatusText = "Controls the angle of hatching lines",
     })
 
-    InAspectRatio = self:AddInput("Dot Aspect Ratio", "AspectRatio", {
-        LINKID_DataType = "Number",
-        INPID_InputControl = "SliderControl",
-        INP_Default = 0.0,
-        INP_MinAllowed = -1.0,
-        INP_MaxAllowed = 1.0,
-        INPS_StatusText = "Adjusts the base aspect ratio of the dots (-1.0 to 1.0 mapped to 0.25x to 4x)",
-    })
 
     InDotGain = self:AddInput("Dot Gain", "DotGain", {
         LINKID_DataType = "Number",
