@@ -823,7 +823,9 @@ __DEVICE__ void updateBestCell(
         float4 candidateDotColor = userDotColor;
         float candidateStrength = coverageCandidate;
         if (useOriginalColorFlag != 0) {
-            const float2 baseUV = (candidatePos + to_float2(0.5f, 0.5f)) / cellGridNum;
+            const float2 invGrid = to_float2(_frecip((float)cellGridNum.x), _frecip((float)cellGridNum.y));
+            const float2 baseUV = (candidatePos + to_float2(0.5f, 0.5f)) * invGrid;
+            
             if (shiftVal == 0.0f) {
                 candidateDotColor = _tex2DVec4(cell_info2, baseUV.x, baseUV.y);
             } else {
@@ -838,18 +840,14 @@ __DEVICE__ void updateBestCell(
             if (colorReduction > 0) {
                 candidateDotColor = applyColorReduction(candidateDotColor, colorReduction, params);
             }
-            // Enforce UI Alpha setting regardless of original image transparency
             candidateDotColor.w = userDotColor.w;
 
-            const float candidateLuma = _fmaf(candidateDotColor.x, LUMA_R, _fmaf(candidateDotColor.y, LUMA_G, candidateDotColor.z * LUMA_B));
-            candidateStrength *= _fmaxf(1.0f - candidateLuma, 0.0f);
-        } else if (blendWithInput != 0) {
-            // If UseOriginalColor is off and BlendWithInput is on,
-            // we should not sample shifted input color to override the solid userDotColor,
-            // because it would shift a solid color unnaturally and break opacity mappings.
+            const float luma = _fmaf(candidateDotColor.x, LUMA_R, _fmaf(candidateDotColor.y, LUMA_G, candidateDotColor.z * LUMA_B));
+            candidateStrength *= _fmaxf(1.0f - luma, 0.0f);
         }
-        const float strengthDiff = candidateStrength - state->bestStrength;
-        if (strengthDiff > 1e-4f || (strengthDiff >= -1e-4f && coverageCandidate > state->bestCoverage)) {
+
+        const float diff = candidateStrength - state->bestStrength;
+        if (diff > 1e-4f || (_fabs(diff) <= 1e-4f && coverageCandidate > state->bestCoverage)) {
             state->bestStrength = candidateStrength;
             state->bestCoverage = coverageCandidate;
             state->bestDotColor = candidateDotColor;
@@ -882,15 +880,13 @@ __KERNEL__ void RenderDotsKernel(
     const float yOffset = cellPitch.y * 0.5f;
     const float2 halfCellPitch = cellPitch * 0.5f;
     const float avgCellSize = (cellPitch.x + cellPitch.y) * 0.5f;
-    const int isHighDensity = (avgCellSize < MIN_CHECK_RADIUS) ? 1 : 0;
+    const int isHighDensity = (avgCellSize < MIN_CHECK_RADIUS);
 
     const int mainCellY = (int)_floorf((pixelPos.y + yOffset) / cellPitch.y);
-    const int isOddRow = (mainCellY % 2 != 0) ? 1 : 0;
+    const int isOddRow  = (mainCellY & 1);
 
-    float adjustedX = pixelPos.x;
-    if (isOddRow != 0) {
-        adjustedX += halfCellPitch.x * params->gridStaggerX;
-    }
+    const float staggerX = halfCellPitch.x * params->gridStaggerX;
+    const float adjustedX = _fmaf((float)isOddRow, staggerX, pixelPos.x);
 
     const int mainCellX = (int)_floorf(adjustedX / cellPitch.x);
     const float2 mainCellPos = to_float2((float)mainCellX, (float)mainCellY);
@@ -906,15 +902,15 @@ __KERNEL__ void RenderDotsKernel(
     const int useOriginalColorFlag = params->useOriginalColor;
     const int colorReduction = params->colorReduction;
 
-    const float intWidth = (float)params->srcSize[0];
+    const float intWidth  = (float)params->srcSize[0];
     const float intHeight = (float)params->srcSize[1];
-    const int blendWithInput = params->blendWithInput > 0 ? 1 : 0;
+    const int blendIn = (params->blendWithInput != 0);
 
-    const float shiftVal = (blendWithInput != 0 || useOriginalColorFlag != 0) ? params->rgbShift : 0.0f;
+    const float shiftVal = _mix(0.0f, params->rgbShift, (float)(blendIn || (useOriginalColorFlag != 0)));
 
     float4 inputColor = paperColor;
 
-    if (blendWithInput != 0) {
+    if (blendIn != 0) {
         const float px = (float)x / intWidth;
         const float py = (float)y / intHeight;
 
@@ -938,13 +934,13 @@ __KERNEL__ void RenderDotsKernel(
     struct BestCellState state;
     state.bestCoverage = 0.0f;
     state.bestStrength = -1.0f;
-    state.bestDotColor = (blendWithInput != 0 && useOriginalColorFlag != 0) ? inputColor : userDotColor;
+    state.bestDotColor = _mix(userDotColor, inputColor, (float)(blendIn && (useOriginalColorFlag != 0)));
 
-    updateBestCell(mainCellPos, pixelPos, cellGridNum, cell_info1, cell_info2, cell_info3, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, blendWithInput, shiftVal, params, &state, cellBasePitch);
+    updateBestCell(mainCellPos, pixelPos, cellGridNum, cell_info1, cell_info2, cell_info3, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, blendIn, shiftVal, params, &state, cellBasePitch);
 
     const float2 cellCenter = to_float2(
-        mainCellX * cellPitch.x + ((isOddRow != 0) ? (halfCellPitch.x * params->gridStaggerX) : 0.0f) + halfCellPitch.x,
-        mainCellY * cellPitch.y + halfCellPitch.y
+        _fmaf((float)mainCellX, cellPitch.x, _fmaf((float)isOddRow, staggerX, halfCellPitch.x)),
+        _fmaf((float)mainCellY, cellPitch.y, halfCellPitch.y)
     );
     
     const float2 relPos = pixelPos - cellCenter;
@@ -954,10 +950,10 @@ __KERNEL__ void RenderDotsKernel(
     getNeighborOffsets(isOddRow, params->gridStaggerX, neighborOffsets, &neighborCount);
 
     if (isHighDensity != 0) {
-        // High density rendering
+        // High density logic optimization: branchless mapping
         int checkIndices[2] = {-1, -1};
         int checkCount = 0;
-        const float2 cellThreshold = halfCellPitch * 0.5f; // Boundary threshold (quarter pitch)
+        const float2 cellThreshold = halfCellPitch * 0.5f; 
         const float2 absRelPos = to_float2(_fabs(relPos.x), _fabs(relPos.y));
 
         if (absRelPos.x > cellThreshold.x) {
@@ -965,34 +961,33 @@ __KERNEL__ void RenderDotsKernel(
         }
 
         if (absRelPos.y > cellThreshold.y) {
-            if (params->gridStaggerX == 0.0f) {
-                checkIndices[checkCount++] = (relPos.y > 0.0f) ? 5 : 1; // Bottom or Top
-            } else {
-                checkIndices[checkCount++] = (relPos.y > 0.0f) ? (isOddRow ? 3 : 4)
-                                                               : (isOddRow ? 0 : 1);
-            }
+            checkIndices[checkCount++] = _mix(
+                _mix(1.0f, 5.0f, (float)(relPos.y > 0.0f)),
+                _mix((float)(isOddRow ? 0 : 1), (float)(isOddRow ? 3 : 4), (float)(relPos.y > 0.0f)),
+                (float)(params->gridStaggerX != 0.0f)
+            );
             if (checkCount > 2) checkCount = 2;
         }
 
         for (int i = 0; i < checkCount; i++) {
             const int index = checkIndices[i];
             if (index < 0) continue;
-            updateBestCell(mainCellPos + neighborOffsets[index], pixelPos, cellGridNum, cell_info1, cell_info2, cell_info3, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, blendWithInput, shiftVal, params, &state, cellBasePitch);
+            updateBestCell(mainCellPos + neighborOffsets[index], pixelPos, cellGridNum, cell_info1, cell_info2, cell_info3, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, blendIn, shiftVal, params, &state, cellBasePitch);
         }
     } else {
         for (int i = 0; i < neighborCount; i++) {
-            updateBestCell(mainCellPos + neighborOffsets[i], pixelPos, cellGridNum, cell_info1, cell_info2, cell_info3, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, blendWithInput, shiftVal, params, &state, cellBasePitch);
+            updateBestCell(mainCellPos + neighborOffsets[i], pixelPos, cellGridNum, cell_info1, cell_info2, cell_info3, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, blendIn, shiftVal, params, &state, cellBasePitch);
         }
     }
 
     if (state.bestCoverage > 0.0f) {
-        const float4 baseColor = (blendWithInput != 0) ? inputColor : paperColor;
+        const float4 baseColor = (blendIn != 0) ? inputColor : paperColor;
         const float4 finalColor = blendDotOver(baseColor, state.bestDotColor, state.bestCoverage);
         _tex2DVec4Write(dst, x, y, finalColor);
         return;
     }
 
-    if (blendWithInput != 0) {
+    if (blendIn != 0) {
         _tex2DVec4Write(dst, x, y, inputColor);
     } else {
         _tex2DVec4Write(dst, x, y, paperColor);
