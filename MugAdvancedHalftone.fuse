@@ -372,6 +372,20 @@ __DEVICE__ float hash3D(uint x, uint y, uint z, uint seedOffset) {
     return (float)(h & 0x00FFFFFF) * (1.0f / (float)0x00FFFFFF) * 2.0f - 1.0f;
 }
 
+// -- Animated Hash Interpolation (Vectorized for SIMD efficiency)
+__DEVICE__ float4 interpolateHash4(uint x, uint y, uint b0, uint b1, float t, uint s1, uint s2, uint s3, uint s4) {
+    float4 r0 = to_float4(hash3D(x, y, b0, s1), hash3D(x, y, b0, s2), hash3D(x, y, b0, s3), hash3D(x, y, b0, s4));
+    float4 r1 = to_float4(hash3D(x, y, b1, s1), hash3D(x, y, b1, s2), hash3D(x, y, b1, s3), hash3D(x, y, b1, s4));
+    return _mix(r0, r1, t);
+}
+
+// -- Animated Hash Interpolation (Scalar variant)
+__DEVICE__ float interpolateHash(uint x, uint y, uint b0, uint b1, float t, uint s) {
+    return _mix(hash3D(x, y, b0, s), hash3D(x, y, b1, s), t);
+}
+
+// -- Cell Information Processing Kernel
+// Entry point for calculating cell-level geometry and color data.
 __KERNEL__ void CellInfoKernel(
     __CONSTANTREF__ CellInfoParams *params,
     __TEXTURE2D__ src,
@@ -381,175 +395,116 @@ __KERNEL__ void CellInfoKernel(
 {
     DEFINE_KERNEL_ITERATORS_XY(x, y);
 
-    // Do not process out-of-bounds pixels
     if (x >= params->dstSize[0] || y >= params->dstSize[1])
         return;
 
     const uint ux = (uint)x;
     const uint uy = (uint)y;
     
-    // -- Continuous Time Interpolation
-    // Blends between two discrete integer phases of the jitter noise to create smooth animation.
+    // -------------------------------------------------------------------------
+    // -- Step 1: Geometry Setup and Jitter Generation
+    // -------------------------------------------------------------------------
     const float phase = params->jitterPhase;
     const float phaseBaseF = _floorf(phase);
-    const uint basePhase0 = (uint)phaseBaseF;
-    const uint basePhase1 = basePhase0 + 1;
-    
-    const float fraction = phase - phaseBaseF;
-    const float t = fraction * fraction * _fmaf(-2.0f, fraction, 3.0f); // Cubic Hermite interpolation
+    const uint b0 = (uint)phaseBaseF;
+    const uint b1 = b0 + 1u;
+    const float t = (phase - phaseBaseF) * (phase - phaseBaseF) * _fmaf(-2.0f, (phase - phaseBaseF), 3.0f);
 
-    // Use vectorized mix for interleaved random properties (X, Y, Size, Aspect)
-    const float4 r0 = to_float4(
-        hash3D(ux, uy, basePhase0, 0u),          // Position X
-        hash3D(ux, uy, basePhase0, 10007u),      // Position Y
-        hash3D(ux, uy, basePhase0, 9973u),       // Size
-        hash3D(ux, uy, basePhase0, 2191590403u)  // Aspect
-    );
-    const float4 r1 = to_float4(
-        hash3D(ux, uy, basePhase1, 0u),
-        hash3D(ux, uy, basePhase1, 10007u),
-        hash3D(ux, uy, basePhase1, 9973u),
-        hash3D(ux, uy, basePhase1, 2191590403u)
-    );
-    const float4 r = _mix(r0, r1, t);
-    const float randX = r.x;
-    const float randY = r.y;
-    const float randS = r.z;
-    const float randAspect = r.w;
-
-    // Fluctuation range of aspect ratio is symmetric vertically and horizontally (0.25x to 4.0x)
-    const float aspectMultiplier = _exp2f(params->aspectJitter * randAspect * 2.0f);
+    // Composite animated random fields (PositionX, PositionY, SizeVar, AspectVar)
+    const float4 rnd = interpolateHash4(ux, uy, b0, b1, t, 0u, 10007u, 9973u, 2191590403u);
+    const float aspectMultiplier = _exp2f(params->aspectJitter * rnd.w * 2.0f);
     const float finalAspect = _fmaxf(0.01f, params->aspectRatio * aspectMultiplier);
-
-    // Use the Pitch values calculated on the CPU
-    const float cellBasePitch = params->cellBasePitch;
-    const float cellPitchX = params->cellPitchX;
-    const float cellPitchY = params->cellPitchY;
-    const float halfPitchX = cellPitchX * 0.5f;
-    const float halfPitchY = cellPitchY * 0.5f;
     
-    // Dot size (Radius) is derived from basePitch to maintain size while spacing changes
-    const float maxCellRadius = (cellBasePitch * 0.5f) * 1.5f;
+    // Grid alignment and Cell spacing calculations
+    const float pitchX = params->cellPitchX;
+    const float pitchY = params->cellPitchY;
+    const float halfX  = pitchX * 0.5f;
+    const float halfY  = pitchY * 0.5f;
+    const float rowOff = (float)(uy & 1u) * (-halfX * params->gridStaggerX);
 
-    // -- Grid Geometry and Center Calculation
-    // Calculates staggered row offsets (for honeycomb grids) and applies randomized position jitter.
-    const float rowOffset = (float)(uy & 1u) * (-halfPitchX * params->gridStaggerX);
+    // Compute final center in pixels with position jitter
+    const float cellCX = _fmaf((float)x, pitchX, halfX + rowOff + (rnd.x * params->positionJitter * halfX));
+    const float cellCY = _fmaf((float)y, pitchY, (rnd.y * params->positionJitter * halfY));
 
-    const float jitterAmountX = params->positionJitter * halfPitchX;
-    const float jitterAmountY = params->positionJitter * halfPitchY;
+    // -------------------------------------------------------------------------
+    // -- Step 2: Adaptive Area Sampling
+    // -------------------------------------------------------------------------
+    const float radiusSQ = halfX * halfX;
+    const int step = ((float)halfX > SAMPLING_STEP_THRESHOLD) ? SAMPLING_STEP_LARGE : 1;
 
-    const float cellCenterX = _fmaf((float)x, cellPitchX, halfPitchX + rowOffset + (randX * jitterAmountX));
-    const float cellCenterY = _fmaf((float)y, cellPitchY, randY * jitterAmountY);
+    int count = 0;
+    float4 sumCol = to_float4(0.0f, 0.0f, 0.0f, 0.0f);
 
-    // Define sampling region around the cell to compute average luminance
-    const int samplingRadius = (int)(halfPitchX);
-    const float radiusSquared = (float)(samplingRadius * samplingRadius);
+    const int minX = max(0, (int)(cellCX - halfX));
+    const int maxX = min(params->srcSize[0] - 1, (int)(cellCX + halfX));
+    const int minY = max(0, (int)(cellCY - halfX));
+    const int maxY = min(params->srcSize[1] - 1, (int)(cellCY + halfX));
 
-    // Dynamic adjustment of sampling step size
-    const int sampleStep = ((float)samplingRadius > SAMPLING_STEP_THRESHOLD) ? SAMPLING_STEP_LARGE : 1;
+    if (minX <= maxX && minY <= maxY) {
+        for (int py = minY; py <= maxY; py += step) {
+            const float dySQ = (float)((float)py - cellCY) * ((float)py - cellCY);
+            if (dySQ > radiusSQ) continue;
 
-    int sampleCount = 0;
-    float4 totalColor = to_float4(0.0f, 0.0f, 0.0f, 0.0f);
+            const float dxRange = _sqrtf(radiusSQ - dySQ);
+            const int lx = max(minX, (int)(cellCX - dxRange));
+            const int rx = min(maxX, (int)(cellCX + dxRange));
 
-    // Compute loop bounds with image boundary checks for efficiency
-    const float fSamplingRadius = (float)samplingRadius;
-    const int minX = max(0, (int)(cellCenterX - fSamplingRadius));
-    const int maxX = min(params->srcSize[0] - 1, (int)(cellCenterX + fSamplingRadius));
-    const int minY = max(0, (int)(cellCenterY - fSamplingRadius));
-    const int maxY = min(params->srcSize[1] - 1, (int)(cellCenterY + fSamplingRadius));
-
-    // Early Return for invalid ranges to improve GPU thread utilization
-    if (minX > maxX || minY > maxY) {
-        _tex2DVec4Write(dst_info1, x, y, to_float4(cellCenterX, cellCenterY, 0.0f, finalAspect));
-        _tex2DVec4Write(dst_info2, x, y, to_float4(0.0f, 0.0f, 0.0f, 1.0f));
-        return;
-    }
-
-    // Loop dynamically over the bounding box calculated from the cell center
-    for (int pixelY = minY; pixelY <= maxY; pixelY += sampleStep) {
-        const float dy = (float)pixelY - cellCenterY;
-        const float dySquared = dy * dy;
-
-        // Early vertical distance cutoff checking (Circular bound check)
-        if (dySquared > radiusSquared) continue;
-
-        // Pre-calculate maximum horizontal range within the circular bounds
-        const float maxDxSq = radiusSquared - dySquared;
-        const float maxDx = _sqrtf(maxDxSq);
-        const int localMinX = max(minX, (int)(cellCenterX - maxDx));
-        const int localMaxX = min(maxX, (int)(cellCenterX + maxDx));
-
-        for (int pixelX = localMinX; pixelX <= localMaxX; pixelX += sampleStep) {
-            // Accumulate color only (Luma is computed later via linearity)
-            totalColor += _tex2DVec4(src, (float)pixelX, (float)pixelY);
-            sampleCount++;
+            for (int px = lx; px <= rx; px += step) {
+                sumCol += _tex2DVec4(src, (float)px, (float)py);
+                count++;
+            }
         }
     }
 
-    // Fast path execution if no valid samples were found
-    if (sampleCount == 0) {
-        _tex2DVec4Write(dst_info1, x, y, to_float4(cellCenterX, cellCenterY, 0.0f, 1.0f));
+    // Fast-path for empty samples or error cases
+    if (count == 0) {
+        _tex2DVec4Write(dst_info1, x, y, to_float4(cellCX, cellCY, 0.0f, finalAspect));
         _tex2DVec4Write(dst_info2, x, y, to_float4(0.0f, 0.0f, 0.0f, 1.0f));
         return;
     }
 
-    // -- Post-Sampling Processing
-    // Derives mean luminance from averaged color. Linear weighting allows luma conversion after averaging.
-    const float invSampleCount = _frecip((float)sampleCount);
-    const float4 avgColor = totalColor * invSampleCount;
-    float avgLuma = _fmaf(avgColor.x, LUMA_R, _fmaf(avgColor.y, LUMA_G, avgColor.z * LUMA_B));
-
-    // Apply contrast enhancement
-    avgLuma = _fmaf(avgLuma - 0.5f, params->contrast, 0.5f);
-    avgLuma = _saturatef(avgLuma);  // Clamp between 0.0 and 1.0
-
+    // -------------------------------------------------------------------------
+    // -- Step 3: Tonal Sizing (Maps averaged luminance to dot radius)
+    // -------------------------------------------------------------------------
+    const float4 avgColor = sumCol * _frecip((float)count);
+    const float  avgLuma  = _fmaf(avgColor.x, LUMA_R, _fmaf(avgColor.y, LUMA_G, avgColor.z * LUMA_B));
+    
+    // Contrast Adjustment
+    const float contrastLuma = _saturatef(_fmaf(avgLuma - 0.5f, params->contrast, 0.5f));
     const int invertMode = params->invertMode;
-
-    // Compute preliminary dot tonal strength based on luminance (Adjusts for invert mode)
-    float tonalValue = (invertMode != 0) ? avgLuma : (1.0f - avgLuma);
-
-    // Apply dot gain (ink spread simulation)
+    
+    // Growth Determination (Invert, Gain, Curve)
+    float tonalValue = (invertMode != 0) ? contrastLuma : (1.0f - contrastLuma);
     tonalValue = _saturatef(tonalValue + params->dotGain);
-
-    // Dot size curve correction (1.0 = linear)
     if (params->dotCurve != 1.0f) {
-        const float curveFactor = _fmaxf(params->dotCurve, 1e-4f);
-        tonalValue = _powf(_saturatef(tonalValue), curveFactor);
+        tonalValue = _powf(_saturatef(tonalValue), _fmaxf(params->dotCurve, 1e-4f));
     }
+    
+    // Scale jitter for individual flavor
+    tonalValue = _saturatef(tonalValue * (1.0f + (rnd.z * params->sizeJitter * 0.5f)));
 
-    // Batch process combined sizing operations: Brightness cutoff and minimum radius limit
-    // Apply local size jitter
-    const float sizeVariation = 1.0f + (randS * params->sizeJitter * 0.5f); // ±50% scale variation
-    tonalValue = _saturatef(tonalValue * sizeVariation);
-
-    // -- Dot Sizing Logic
-    // Maps luminance to dot radius using contrast, gain, and growth curves.
+    // Visibility Cutoff Logic
     const int passesBrightness = (invertMode != 0)
-        ? (avgLuma >= params->brightnessCutoff ? 1 : 0)
-        : (avgLuma <= params->brightnessCutoff ? 1 : 0);
+        ? (contrastLuma >= params->brightnessCutoff ? 1 : 0)
+        : (contrastLuma <= params->brightnessCutoff ? 1 : 0);
 
     float dotRadius = 0.0f;
-    if (passesBrightness && tonalValue >= params->minDotRadius) {
-        dotRadius = _clampf(tonalValue * maxCellRadius, 0.0f, maxCellRadius * params->clipRadius);
+    const float maxRadius = (params->cellBasePitch * 0.5f) * 1.5f;
+    if (passesBrightness && tonalValue > params->minDotRadius) {
+        dotRadius = _clampf(tonalValue * maxRadius, 0.0f, maxRadius * params->clipRadius);
     }
 
-    // -- Rotation Matrix Constants (Pre-calculation)
-    // Pre-calculates sine/cosine and recip-aspect to avoid redundant math in the rendering kernel.
-    const float randAngle0 = hash3D(ux, uy, basePhase0, 314159265u);
-    const float randAngle1 = hash3D(ux, uy, basePhase1, 314159265u);
-    const float randAngle = _mix(randAngle0, randAngle1, t);
-    
+    // -------------------------------------------------------------------------
+    // -- Step 4: Buffer Output
+    // -------------------------------------------------------------------------
+    const float randAngle = interpolateHash(ux, uy, b0, b1, t, 314159265u);
     const float finalAngle = randAngle * params->angleJitter * 90.0f;
     const float cosA = _cospif(finalAngle * (1.0f / 180.0f));
     const float sinA = _sinpif(finalAngle * (1.0f / 180.0f));
-    const float recipAspect = _frecip(_fmaxf(0.01f, finalAspect));
 
-    // dst_info1 (Geometry): [CenterX, CenterY, Radius, Aspect]
-    // dst_info2 (Color): [R, G, B, Alpha]
-    // dst_info3 (Extra): [Angle, cosA, sinA, recipAspect]
-    _tex2DVec4Write(dst_info1, x, y, to_float4(cellCenterX, cellCenterY, dotRadius, finalAspect));
+    _tex2DVec4Write(dst_info1, x, y, to_float4(cellCX, cellCY, dotRadius, finalAspect));
     _tex2DVec4Write(dst_info2, x, y, avgColor);
-    _tex2DVec4Write(dst_info3, x, y, to_float4(finalAngle, cosA, sinA, recipAspect));
+    _tex2DVec4Write(dst_info3, x, y, to_float4(finalAngle, cosA, sinA, _frecip(_fmaxf(0.01f, finalAspect))));
 }
 ]]
 
