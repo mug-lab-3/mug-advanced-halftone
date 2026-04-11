@@ -1,3 +1,7 @@
+<p align="right">
+  日本語 | <a href="README.en.md">English</a>
+</p>
+
 # 🎨 Mug Advanced Halftone
 
 <p align="left">
