@@ -1,0 +1,36 @@
+Atom {
+	Name = "mug-advanced-halftone",
+	Category = "Tools/Effect",
+	Author = "Mug",
+	Version = 2.33,
+	Date = {2026, 4, 12},
+	Description = [[<p>Mug Advanced Halftone is a powerful halftone generation plugin for DaVinci Resolve and Fusion. It allows you to create classic comic book styles, retro PC graphics, and artistic pixel art textures with high-performance GPU processing. Features include hexagonal grid patterns, customizable dot shapes (Circle, Square, Diamond, Line, Crosshatch), and organic jitter for a more natural look. It also supports RGB Shift and color palette limitations for authentic retro aesthetics.</p>
+
+<h3>How to use in Fusion:</h3>
+<ul>
+  <li>After installing via Reactor, restart DaVinci Resolve if the tool does not appear in your library.</li>
+  <li>Search for "Mug Advanced Halftone" in the Fusion tool menu (Shift+Space).</li>
+  <li>Connect your media to the input and adjust parameters in the Inspector.</li>
+</ul>
+
+<h3>Essential Notes:</h3>
+<ul>
+  <li>Ensure you have the latest version of DaVinci Resolve for optimal performance.</li>
+  <li>GPU acceleration is supported; performance may vary depending on your hardware.</li>
+  <li>Commercial use is permitted under the MIT License (Copyright notice is not required for rendered video works).</li>
+</ul>
+
+<hr>
+<p>For more details, source code, and updates, visit the GitHub repository:<br>
+<a href="https://github.com/mug-lab-3/mug-advanced-halftone">https://github.com/mug-lab-3/mug-advanced-halftone</a></p>]],
+	Donation = {
+		URL = [[https://www.paypal.com/paypalme/muglab]],
+		Amount = "$5.00",
+	},
+
+	Deploy = {
+		"Fuses/MugLab/MugAdvancedHalftone.fuse",
+		"Templates/Edit/Effects/MugLab/MugAdvancedHalftone.png",
+		"Templates/Edit/Effects/MugLab/MugAdvancedHalftone.setting",
+	},
+}
