@@ -31,7 +31,7 @@ created using this Fuse. Feel free to use it for both commercial and non-commerc
 ShowCellInfo = false
 
 -- Set version globally for easy maintenance
-VERSION = 2.33
+VERSION = 2.34
 
 --******************************************************************************************************
 FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
@@ -43,7 +43,7 @@ FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
     REGS_IconID            = "Icons.Tools.Icons.AdvancedHalftone",
     REG_Source_GlobalCtrls = true,
     REG_Source_SizeCtrls   = true,
-    REG_Version            = VERSION,
+    REG_Version            = math.floor(VERSION * 100),
 })
 
 -- Palette Mapping Types
@@ -552,7 +552,7 @@ RenderDotsKernel = [[
 #define LUMA_G 0.7152f
 #define LUMA_B 0.0722f
 
-__DEVICE__ float4 applyColorReduction(float4 color, int mode, __CONSTANTREF__ RenderParams *params) {
+__DEVICE__ float4 applyColorReduction(float4 color, __CONSTANTREF__ RenderParams *params) {
     const int mappingMode = params->mappingMode;
     if (mappingMode == 0) return color;
 
@@ -581,11 +581,9 @@ __DEVICE__ float4 applyColorReduction(float4 color, int mode, __CONSTANTREF__ Re
             pb = _sqrtf(_fmaxf(color.z, 0.0f));
         }
 
-        // Cast the float[128] array to a float4 pointer for vectorized access
-        __CONSTANTREF__ float4 *palette = (__CONSTANTREF__ float4 *)params->themePalette;
-        
         for (int i = 0; i < count; i++) {
-            const float4 p = palette[i];
+            const int base = i * 4;
+            const float4 p = to_float4(params->themePalette[base], params->themePalette[base + 1], params->themePalette[base + 2], params->themePalette[base + 3]);
             
             // Perceptual weighting factor (R:0.3, G:0.59, B:0.11)
             const float dr = pr - p.x;
@@ -601,8 +599,8 @@ __DEVICE__ float4 applyColorReduction(float4 color, int mode, __CONSTANTREF__ Re
         }
     }
 
-    __CONSTANTREF__ float4 *resPalette = (__CONSTANTREF__ float4 *)params->themePalette;
-    float4 res = resPalette[bestIdx];
+    const int resBase = bestIdx * 4;
+    float4 res = to_float4(params->themePalette[resBase], params->themePalette[resBase + 1], params->themePalette[resBase + 2], params->themePalette[resBase + 3]);
     res.w = color.w; // Preserve original alpha
     return res;
 }
@@ -746,31 +744,30 @@ __DEVICE__ float checkCellDot(
 }
 
 
-// Neighbor cell relative offset definitions
-__DEVICE__ void getNeighborOffsets(const int isOddRow, const float gridStaggerX, float2 neighborOffsets[8], int *neighborCount)
+// Neighbor cell relative offset calculator
+__DEVICE__ float2 getNeighborOffset(const int index, const int isOddRow, const float gridStaggerX)
 {
     // Hexagonal grid layout
     if (gridStaggerX != 0.0f) {
-        *neighborCount = 6;
         const float offset = isOddRow != 0 ? -1.0f : 0.0f;
-        neighborOffsets[0] = to_float2(offset, -1.0f);
-        neighborOffsets[1] = to_float2(offset + 1.0f, -1.0f);
-        neighborOffsets[2] = to_float2( 1.0f,  0.0f);
-        neighborOffsets[3] = to_float2(offset + 1.0f,  1.0f);
-        neighborOffsets[4] = to_float2(offset,  1.0f);
-        neighborOffsets[5] = to_float2(-1.0f,  0.0f);
+        if (index == 0) return to_float2(offset, -1.0f);
+        if (index == 1) return to_float2(offset + 1.0f, -1.0f);
+        if (index == 2) return to_float2( 1.0f,  0.0f);
+        if (index == 3) return to_float2(offset + 1.0f,  1.0f);
+        if (index == 4) return to_float2(offset,  1.0f);
+        if (index == 5) return to_float2(-1.0f,  0.0f);
     } else {
         // Standard orthogonal grid
-        *neighborCount = 8;
-        neighborOffsets[0] = to_float2(-1.0f, -1.0f);
-        neighborOffsets[1] = to_float2( 0.0f, -1.0f);
-        neighborOffsets[2] = to_float2( 1.0f, -1.0f);
-        neighborOffsets[3] = to_float2( 1.0f,  0.0f);
-        neighborOffsets[4] = to_float2( 1.0f,  1.0f);
-        neighborOffsets[5] = to_float2( 0.0f,  1.0f);
-        neighborOffsets[6] = to_float2(-1.0f,  1.0f);
-        neighborOffsets[7] = to_float2(-1.0f,  0.0f);
+        if (index == 0) return to_float2(-1.0f, -1.0f);
+        if (index == 1) return to_float2( 0.0f, -1.0f);
+        if (index == 2) return to_float2( 1.0f, -1.0f);
+        if (index == 3) return to_float2( 1.0f,  0.0f);
+        if (index == 4) return to_float2( 1.0f,  1.0f);
+        if (index == 5) return to_float2( 0.0f,  1.0f);
+        if (index == 6) return to_float2(-1.0f,  1.0f);
+        if (index == 7) return to_float2(-1.0f,  0.0f);
     }
+    return to_float2(0.0f, 0.0f);
 }
 
 // Alpha blend overlay function for computing dot coverage
@@ -806,12 +803,7 @@ __DEVICE__ void calculateRadialShift(
     shiftBOFF->y =  uvRel.y * shiftVal;
 }
 
-// Holds state for tracking the best dot coverage and color.
-struct BestCellState {
-    float bestStrength;
-    float bestCoverage;
-    float4 bestDotColor;
-};
+// (BestCellState struct removed for GPU compatibility)
 
 // Evaluates a candidate cell and updates the best cell state.
 __DEVICE__ void evaluateCandidateCell(
@@ -828,7 +820,9 @@ __DEVICE__ void evaluateCandidateCell(
     const int colorReduction,
     const float shiftVal,
     __CONSTANTREF__ RenderParams *params,
-    struct BestCellState *state,
+    float *bestStrength,
+    float *bestCoverage,
+    float4 *bestDotColor,
     const float cellBasePitch)
 {
     // Retrieve dot geometry (center, radius, aspect) from the intermediate buffers
@@ -858,7 +852,7 @@ __DEVICE__ void evaluateCandidateCell(
         }
 
         if (colorReduction > 0) {
-            dotColor = applyColorReduction(dotColor, colorReduction, params);
+            dotColor = applyColorReduction(dotColor, params);
         }
         
         // Ensure transparency follows the UI setting (userAlpha)
@@ -870,11 +864,11 @@ __DEVICE__ void evaluateCandidateCell(
     }
 
     // Update the winner if this candidate is more 'prominent' than current best
-    const float diff = selectionStrength - state->bestStrength;
-    if (diff > 1e-4f || (_fabs(diff) <= 1e-4f && coverage > state->bestCoverage)) {
-        state->bestStrength = selectionStrength;
-        state->bestCoverage = coverage;
-        state->bestDotColor = dotColor;
+    const float diff = selectionStrength - *bestStrength;
+    if (diff > 1e-4f || (_fabs(diff) <= 1e-4f && coverage > *bestCoverage)) {
+        *bestStrength = selectionStrength;
+        *bestCoverage = coverage;
+        *bestDotColor = dotColor;
     }
 }
 
@@ -921,8 +915,8 @@ __KERNEL__ void RenderDotsKernel(
     // -------------------------------------------------------------------------
     // -- Step 2: Input Sampling & Background Setup
     // -------------------------------------------------------------------------
-    const float4 paperColor = *(__CONSTANTREF__ float4 *)params->paperColor;
-    const float4 userDotColor = *(__CONSTANTREF__ float4 *)params->dotColor;
+    const float4 paperColor = to_float4(params->paperColor[0], params->paperColor[1], params->paperColor[2], params->paperColor[3]);
+    const float4 userDotColor = to_float4(params->dotColor[0], params->dotColor[1], params->dotColor[2], params->dotColor[3]);
     const int useOriginalColorFlag = params->useOriginalColor;
     const int colorReduction = params->colorReduction;
     const int blendIn = (params->blendWithInput != 0);
@@ -948,20 +942,19 @@ __KERNEL__ void RenderDotsKernel(
             backgroundImage = to_float4(sR.x, sG.y, sB.z, sG.w);
         }
         if (useOriginalColorFlag != 0 && colorReduction > 0) {
-            backgroundImage = applyColorReduction(backgroundImage, colorReduction, params);
+            backgroundImage = applyColorReduction(backgroundImage, params);
         }
     }
 
     // -------------------------------------------------------------------------
     // -- Step 3: Candidate Evaluation (Collision Analysis)
     // -------------------------------------------------------------------------
-    struct BestCellState state;
-    state.bestCoverage = 0.0f;
-    state.bestStrength = -1.0f;
-    state.bestDotColor = _mix(userDotColor, backgroundImage, (float)(blendIn && (useOriginalColorFlag != 0)));
+    float bestCoverage = 0.0f;
+    float bestStrength = -1.0f;
+    float4 bestDotColor = _mix(userDotColor, backgroundImage, (float)(blendIn && (useOriginalColorFlag != 0)));
 
     // First, evaluate the cell directly containing this pixel
-    evaluateCandidateCell(mainCellGridPos, pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, params, &state, cellBasePitch);
+    evaluateCandidateCell(mainCellGridPos, pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, params, &bestStrength, &bestCoverage, &bestDotColor, cellBasePitch);
 
     // Coordinate mapping to determine distances to neighboring cell boundaries
     const float2 cellCenter = to_float2(
@@ -969,11 +962,6 @@ __KERNEL__ void RenderDotsKernel(
         _fmaf((float)cellIdxY, cellPitch.y, halfPitch.y)
     );
     const float2 relPos = pixelPos - cellCenter;
-
-    // Identify which relative neighbors to check
-    float2 neighbors[8];
-    int neighborCount = 0;
-    getNeighborOffsets(isOddRow, params->gridStaggerX, neighbors, &neighborCount);
 
     const float avgCellSize = (cellPitch.x + cellPitch.y) * 0.5f;
     const int isHighDensity = (avgCellSize < MIN_CHECK_RADIUS);
@@ -990,7 +978,7 @@ __KERNEL__ void RenderDotsKernel(
             checkIndices[checkCount++] = (relPos.x > 0.0f) ? 2 : 5;
         }
         if (absRelPos.y > threshold.y) {
-            checkIndices[checkCount++] = _mix(
+            checkIndices[checkCount++] = (int)_mix(
                 _mix(1.0f, 5.0f, (float)(relPos.y > 0.0f)),
                 _mix((float)(isOddRow ? 0 : 1), (float)(isOddRow ? 3 : 4), (float)(relPos.y > 0.0f)),
                 (float)(params->gridStaggerX != 0.0f)
@@ -1000,12 +988,13 @@ __KERNEL__ void RenderDotsKernel(
 
         for (int i = 0; i < checkCount; i++) {
             const int idx = checkIndices[i];
-            if (idx >= 0) evaluateCandidateCell(mainCellGridPos + neighbors[idx], pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, params, &state, cellBasePitch);
+            if (idx >= 0) evaluateCandidateCell(mainCellGridPos + getNeighborOffset(idx, (int)isOddRow, params->gridStaggerX), pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, params, &bestStrength, &bestCoverage, &bestDotColor, cellBasePitch);
         }
     } else {
         // Broad Search: Required for large dots or loose grids
+        const int neighborCount = (params->gridStaggerX != 0.0f) ? 6 : 8;
         for (int i = 0; i < neighborCount; i++) {
-            evaluateCandidateCell(mainCellGridPos + neighbors[i], pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, params, &state, cellBasePitch);
+            evaluateCandidateCell(mainCellGridPos + getNeighborOffset(i, (int)isOddRow, params->gridStaggerX), pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, params, &bestStrength, &bestCoverage, &bestDotColor, cellBasePitch);
         }
     }
 
@@ -1014,9 +1003,9 @@ __KERNEL__ void RenderDotsKernel(
     // -------------------------------------------------------------------------
     float4 finalOutput = backgroundImage;
 
-    if (state.bestCoverage > 0.0f) {
+    if (bestCoverage > 0.0f) {
         // A dot intersection was found and prioritized by the Collision Analysis
-        finalOutput = blendDotOver(backgroundImage, state.bestDotColor, state.bestCoverage);
+        finalOutput = blendDotOver(backgroundImage, bestDotColor, bestCoverage);
     } 
 
     _tex2DVec4Write(dst, (int)x, (int)y, finalOutput);
