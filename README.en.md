@@ -130,6 +130,11 @@ See the [LICENSE](./LICENSE) file for details.
  
 ## 📜 Changelog
 
+### v2.34 (2026/04/13)
+- **Mac Support**: Resolved an issue where the effect failed to build or render correctly on Mac.
+- **Internal Refactoring**: Optimized data structures and memory management within the GPU kernel to ensure stability across a wider range of hardware.
+- **Improved Version Management**: Optimized internal versioning for better compatibility with ecosystem tools.
+
 ### v2.33 (2026/04/06)
 - **Edge Rendering Improvements**: Fixed an issue where unnatural dots (outlining) appeared at image edges or around text on transparent backgrounds.
 - **Improved Sampling Accuracy**: Enhanced internal processing to sample pixel colors more accurately, resulting in stable rendering up to the edges.
