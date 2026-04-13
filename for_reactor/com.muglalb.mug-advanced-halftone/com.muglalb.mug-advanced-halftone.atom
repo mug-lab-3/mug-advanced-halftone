@@ -24,7 +24,7 @@ Atom {
 <p>For more details, source code, and updates, visit the GitHub repository:<br>
 <a href="https://github.com/mug-lab-3/mug-advanced-halftone">https://github.com/mug-lab-3/mug-advanced-halftone</a></p>]],
 	Donation = {
-		URL = [[https://www.paypal.com/paypalme/muglab]],
+		URL = [[https://github.com/sponsors/mug-lab-3]],
 		Amount = "$5.00",
 	},
 
