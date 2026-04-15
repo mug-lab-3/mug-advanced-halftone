@@ -31,7 +31,7 @@ created using this Fuse. Feel free to use it for both commercial and non-commerc
 ShowCellInfo = false
 
 -- Set version globally for easy maintenance
-VERSION = 2.35
+VERSION = 3.0
 
 --******************************************************************************************************
 FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
@@ -315,7 +315,6 @@ CellInfoParams = [[
   float aspectJitter;     // Aspect ratio jitter (random ratio variation)
   float angleJitter;      // Angle jitter (strength of ±90° variation)
   int invertMode;         // Subtractive mode switch (inverts how luminance maps to dot size)
-  float brightnessCutoff; // Brightness threshold for generating dots
   int useOriginalColor;   // Whether to use the original input color for dots
   float gridStaggerX;     // X-axis offset multiplier for odd rows
   float cellPitchX;       // Adjusted grid spacing X
@@ -512,14 +511,9 @@ __KERNEL__ void CellInfoKernel(
     // Scale jitter for individual flavor
     tonalValue = _saturatef(tonalValue * (1.0f + (rnd.z * sizeJitter * 0.5f)));
 
-    // Visibility Cutoff Logic
-    const int passesBrightness = (invertMode != 0)
-        ? (contrastLuma >= brightnessCutoff ? 1 : 0)
-        : (contrastLuma <= brightnessCutoff ? 1 : 0);
-
     float dotRadius = 0.0f;
     const float maxRadius = (cellBasePitch * 0.5f) * 1.5f;
-    if (passesBrightness && tonalValue > minDotRadius) {
+    if (tonalValue > minDotRadius) {
         dotRadius = _clampf(tonalValue * maxRadius, 0.0f, maxRadius * clipRadius);
     }
 
@@ -1104,13 +1098,13 @@ function Create()
         INPS_StatusText = "Adjusts the growth curve of dot sizes (-1.0 to 1.0 mapped to 0.25x to 4x)",
     })
 
-    InCutoffDotRadius = self:AddInput("Cutoff Dot Radius", "MinDotRadius", {
+    InCutoffDotRadius = self:AddInput("Min Dot Radius", "MinDotRadius", {
         LINKID_DataType = "Number",
         INPID_InputControl = "SliderControl",
         INP_Default = 0.05,
         INP_MinAllowed = 0.0,
         INP_MaxAllowed = 1.0,
-        INPS_StatusText = "Dots smaller than this radius are not drawn",
+        INPS_StatusText = "Removes dots smaller than this value. Effectively clears highlights by setting a minimum printable size threshold.",
     })
 
     InClipDotRadius = self:AddInput("Clip Dot Radius", "ClipDotRadius", {
@@ -1123,14 +1117,6 @@ function Create()
     })
 
 
-    InBrightnessCutoff = self:AddInput("Brightness Cutoff", "BrightnessCutoff", {
-        LINKID_DataType = "Number",
-        INPID_InputControl = "SliderControl",
-        INP_Default = 0.75,
-        INP_MinAllowed = 0.0,
-        INP_MaxAllowed = 1.0,
-        INPS_StatusText = "Luminance threshold controlling where dots appear; behavior flips if Invert Brightness is enabled",
-    })
 
     InEnableDotAntialias = self:AddInput("Enable Dot Antialias", "EnableDotAntialias", {
         LINKID_DataType = "Number",
@@ -1468,7 +1454,6 @@ function Process(req)
     local aspectJitter = InAspectJitter:GetValue(req).Value
     local angleJitter = InAngleJitter:GetValue(req).Value
     local invertMode = InInvertMode:GetValue(req).Value
-    local brightnessCutoff = InBrightnessCutoff:GetValue(req).Value
     local enableDotAntialias = InEnableDotAntialias:GetValue(req).Value > 0.5
     local aaEdgeSoftness = InAAEdgeSoftness:GetValue(req).Value
     local useOriginalColor = InUseOriginalColor:GetValue(req).Value > 0.5 and 1 or 0
@@ -1561,7 +1546,6 @@ function Process(req)
         params.aspectJitter = aspectJitter
         params.angleJitter = angleJitter
         params.invertMode = invertMode > 0.5 and 1 or 0
-        params.brightnessCutoff = brightnessCutoff
         params.useOriginalColor = useOriginalColor
         params.gridStaggerX = gridStaggerX
         params.cellPitchX = cellPitchX

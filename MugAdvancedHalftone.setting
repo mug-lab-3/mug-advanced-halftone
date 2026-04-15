@@ -98,7 +98,7 @@
 				Input14 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
 					Source = "MinDotRadius",
-					Name = "MinDotRadius",
+					Name = "Min Dot Radius",
 					Page = "Controls",
 					Default = 0.05,
 				},
@@ -108,13 +108,6 @@
 					Name = "ClipDotRadius",
 					Page = "Controls",
 					Default = 1,
-				},
-				Input16 = InstanceInput {
-					SourceOp = "MugAdvancedHalftone1",
-					Source = "BrightnessCutoff",
-					Name = "BrightnessCutoff",
-					Page = "Controls",
-					Default = 0.75,
 				},
 				Input17 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
@@ -352,7 +345,7 @@
 							LINKID_DataType = "Number",
 							LBLC_DropDownButton = true,
 							INPID_InputControl = "LabelControl",
-							LBLC_NumInputs = 10,
+							LBLC_NumInputs = 9,
 							INP_Passive = true,
 							INP_External = false,
 							LINKS_Name = "Dot Shape",
