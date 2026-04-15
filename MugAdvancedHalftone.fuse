@@ -299,6 +299,34 @@ ColorThemes = {
 
 }
 
+-- Shared DCTL Code (Mathematical Foundations)
+SHARED_DCTL_CODE = [[
+#define LUMA_R 0.2126f
+#define LUMA_G 0.7152f
+#define LUMA_B 0.0722f
+
+// -- Deterministic Integer-based Hash Function (PCG-style)
+__DEVICE__ float hash3D(uint x, uint y, uint z, uint seedOffset) {
+    uint h = x + y * 374761393u + z * 668265263u + seedOffset;
+    h += h << 10; h ^= h >> 6; h += h << 3; h ^= h >> 11; h += h << 15;
+    h = (h ^ (h >> 16)) * 2654435761u;
+    h = h ^ (h >> 16);
+    return (float)(h & 0x00FFFFFF) * (1.0f / (float)0x00FFFFFF) * 2.0f - 1.0f;
+}
+
+// -- Animated Hash Interpolation (Vectorized for SIMD efficiency)
+__DEVICE__ float4 interpolateHash4(uint x, uint y, uint b0, uint b1, float t, uint s1, uint s2, uint s3, uint s4) {
+    float4 r0 = to_float4(hash3D(x, y, b0, s1), hash3D(x, y, b0, s2), hash3D(x, y, b0, s3), hash3D(x, y, b0, s4));
+    float4 r1 = to_float4(hash3D(x, y, b1, s1), hash3D(x, y, b1, s2), hash3D(x, y, b1, s3), hash3D(x, y, b1, s4));
+    return _mix(r0, r1, t);
+}
+
+// -- Animated Hash Interpolation (Scalar variant)
+__DEVICE__ float interpolateHash(uint x, uint y, uint b0, uint b1, float t, uint s) {
+    return _mix(hash3D(x, y, b0, s), hash3D(x, y, b1, s), t);
+}
+]]
+
 -- Cell Information Calculation Parameters Structure
 CellInfoParams = [[
   int srcSize[2];         // Source image size
@@ -325,10 +353,10 @@ CellInfoParams = [[
 -- Cell Information Calculation Kernel
 -- Intermediate buffer format:
 -- float4 cellInfo1 (Geometry):
---   x: Cell Center X - Actual X position in pixel coordinates
---   y: Cell Center Y - Actual Y position in pixel coordinates
---   z: Dot Radius    - Calculated dot radius (0.0 to maxCellRadius)
---   w: Final Aspect  - Local dot aspect ratio for this individual cell
+--   x: Dot Radius    - Calculated dot radius (0.0 to maxCellRadius)
+--   y: Final Aspect  - Local dot aspect ratio for this individual cell
+--   z: Cos(Angle)    - Cached cosine for fast rotation
+--   w: Sin(Angle)    - Cached sine for fast rotation
 --
 -- float4 cellInfo2 (Color):
 --   x: Average Color R
@@ -336,52 +364,15 @@ CellInfoParams = [[
 --   z: Average Color B
 --   w: Average Color A (Preserved input alpha)
 --
--- float4 cellInfo3 (Extra / Rotation):
---   x: Final Angle   - Randomized rotation angle in degrees
---   y: Cos(Angle)    - Cached cosine for fast rotation
---   z: Sin(Angle)    - Cached sine for fast rotation
---   w: Recip Aspect  - 1.0 / Final Aspect for normalization
+-- float4 cellInfo3 (Deleted):
+--   This buffer has been eliminated to optimize memory bandwidth.
+--   Cell centers are now calculated on-the-fly in the rendering kernel.
 --
 -- * Note: In the rendering kernel, each pixel samples its enclosing cell and neighboring cells for accurate overlap rendering.
 --
-CellInfoKernel = [[
-#define LUMA_R 0.2126f
-#define LUMA_G 0.7152f
-#define LUMA_B 0.0722f
+CellInfoKernel = SHARED_DCTL_CODE .. [[
 #define SAMPLING_STEP_THRESHOLD 12.0f  // Sampling decimation threshold for large cells
 #define SAMPLING_STEP_LARGE 2          // Decimation rate for large radii
-
-// -- Deterministic Integer-based Hash Function (PCG-style)
-// Essential for cross-hardware consistency (NVIDIA/AMD/Metal).
-// Standard float-based random functions often drift across different architectures.
-__DEVICE__ float hash3D(uint x, uint y, uint z, uint seedOffset) {
-    // High-entropy bitwise avalanching to eliminate periodicity
-    uint h = x + y * 374761393u + z * 668265263u + seedOffset;
-    h += h << 10;
-    h ^= h >> 6;
-    h += h << 3;
-    h ^= h >> 11;
-    h += h << 15;
-    
-    // PCG-style final permutation mix
-    h = (h ^ (h >> 16)) * 2654435761u;
-    h = h ^ (h >> 16);
-    
-    // Normalize integer hash to [-1.0, 1.0] range
-    return (float)(h & 0x00FFFFFF) * (1.0f / (float)0x00FFFFFF) * 2.0f - 1.0f;
-}
-
-// -- Animated Hash Interpolation (Vectorized for SIMD efficiency)
-__DEVICE__ float4 interpolateHash4(uint x, uint y, uint b0, uint b1, float t, uint s1, uint s2, uint s3, uint s4) {
-    float4 r0 = to_float4(hash3D(x, y, b0, s1), hash3D(x, y, b0, s2), hash3D(x, y, b0, s3), hash3D(x, y, b0, s4));
-    float4 r1 = to_float4(hash3D(x, y, b1, s1), hash3D(x, y, b1, s2), hash3D(x, y, b1, s3), hash3D(x, y, b1, s4));
-    return _mix(r0, r1, t);
-}
-
-// -- Animated Hash Interpolation (Scalar variant)
-__DEVICE__ float interpolateHash(uint x, uint y, uint b0, uint b1, float t, uint s) {
-    return _mix(hash3D(x, y, b0, s), hash3D(x, y, b1, s), t);
-}
 
 // -- Cell Information Processing Kernel
 // Entry point for calculating cell-level geometry and color data.
@@ -389,8 +380,7 @@ __KERNEL__ void CellInfoKernel(
     __CONSTANTREF__ CellInfoParams *params,
     __TEXTURE2D__ src,
     __TEXTURE2D_WRITE__ dst_info1,
-    __TEXTURE2D_WRITE__ dst_info2,
-    __TEXTURE2D_WRITE__ dst_info3)
+    __TEXTURE2D_WRITE__ dst_info2)
 {
     DEFINE_KERNEL_ITERATORS_XY(x, y);
 
@@ -419,7 +409,6 @@ __KERNEL__ void CellInfoKernel(
     const float aspectJitter = params->aspectJitter;
     const float angleJitter = params->angleJitter;
     const int   invertMode = params->invertMode;
-    const float brightnessCutoff = params->brightnessCutoff;
     const float gridStaggerX = params->gridStaggerX;
     const float cellBasePitch = params->cellBasePitch;
     const float pitchX = params->cellPitchX;
@@ -483,7 +472,7 @@ __KERNEL__ void CellInfoKernel(
         const float clampY = _clampf(cellCY, 0.0f, (float)srcH - 1.0f);
         const float4 edgeColor = _tex2DVec4(src, clampX + 0.5f, clampY + 0.5f);
         
-        _tex2DVec4Write(dst_info1, x, y, to_float4(cellCX, cellCY, 0.0f, finalAspect));
+        _tex2DVec4Write(dst_info1, x, y, to_float4(0.0f, 1.0f, 1.0f, 0.0f));
         _tex2DVec4Write(dst_info2, x, y, edgeColor);
         return;
     }
@@ -525,9 +514,8 @@ __KERNEL__ void CellInfoKernel(
     const float cosA = _cospif(finalAngle * (1.0f / 180.0f));
     const float sinA = _sinpif(finalAngle * (1.0f / 180.0f));
 
-    _tex2DVec4Write(dst_info1, x, y, to_float4(cellCX, cellCY, dotRadius, finalAspect));
+    _tex2DVec4Write(dst_info1, x, y, to_float4(dotRadius, finalAspect, cosA, sinA));
     _tex2DVec4Write(dst_info2, x, y, avgColor);
-    _tex2DVec4Write(dst_info3, x, y, to_float4(finalAngle, cosA, sinA, _frecip(_fmaxf(0.01f, finalAspect))));
 }
 ]]
 
@@ -547,22 +535,19 @@ RenderParams = [[
   float gridStaggerX;     // [19] 4 bytes - X-axis offset multiplier for odd rows (Block 5: 16b aligned)
   int mappingMode;        // [20] 4 bytes - 0: Off, 1: Luma (16 slots), 2: NearestNeighbor
   int paletteSize;        // [21] 4 bytes - Current number of active colors in palette
-  float lineAngle;        // [22] 4 bytes - Hatching line angle in degrees
-  float cellBasePitch;    // [23] 4 bytes - Reference base pitch for dot sizing (Block 6: 16b aligned)
-  float cellPitchX;       // [24] 4 bytes - Adjusted grid spacing X
-  float cellPitchY;       // [25] 4 bytes - Adjusted grid spacing Y
-  int _padding4[2];       // [26-27] 8 bytes - Force alignment to 16-byte boundary (112 bytes total)
-  float themePalette[128]; // [28-155] 512 bytes - RGBA palette (Starts at 112b. Aligned.)
+  float hatchNX;          // [22] 4 bytes - Pre-calculated Sin(Angle)
+  float hatchNY;          // [23] 4 bytes - Pre-calculated -Cos(Angle)
+  float cellBasePitch;    // [24] 4 bytes - Reference base pitch for dot sizing
+  float cellPitchX;       // [25] 4 bytes - Adjusted grid spacing X
+  float cellPitchY;       // [26] 4 bytes - Adjusted grid spacing Y
+  float jitterPhase;      // [27] 4 bytes - Continuous noise phase for jitter
+  float positionJitter;   // [28] 4 bytes - Position jitter strength
+  int _padding4[3];       // [29-31] 12 bytes - Force alignment to 16-byte boundary (128 bytes total)
+  float themePalette[128]; // [32-159] 512 bytes - RGBA palette (Starts at 128b. Aligned.)
 ]]
 
-RenderDotsKernel = [[
-// Constant definitions
-#define LUMA_R 0.2126f
-#define LUMA_G 0.7152f
-#define LUMA_B 0.0722f
-
-__DEVICE__ float4 applyColorReduction(float4 color, __CONSTANTREF__ RenderParams *params) {
-    const int mappingMode = params->mappingMode;
+RenderDotsKernel = SHARED_DCTL_CODE .. [[
+__DEVICE__ float4 applyColorReduction(float4 color, int mappingMode, int paletteSize, int colorReduction, __CONSTANTREF__ RenderParams *params) {
     if (mappingMode == 0) return color;
 
     // Palette indexing
@@ -573,11 +558,8 @@ __DEVICE__ float4 applyColorReduction(float4 color, __CONSTANTREF__ RenderParams
         bestIdx = (int)(_saturatef(luma) * 15.99f);
     } else if (mappingMode == 2) { // Nearest Neighbor Mode
         float minDelta = 1e10f;
-        const int count = params->paletteSize;
+        const int count = paletteSize;
 
-        // Revised: Apply perceptual matching only for 16/32 colors (Indices 1 & 2)
-        // to address "floating black" without affecting other themes.
-        const int colorReduction = params->colorReduction;
         const int usePerceptual = (colorReduction == 1 || colorReduction == 2) ? 1 : 0;
 
         float pr = color.x;
@@ -621,33 +603,31 @@ __DEVICE__ float4 applyColorReduction(float4 color, __CONSTANTREF__ RenderParams
 // Checks presence and geometry of a dot within a cell, returning coverage factor
 __DEVICE__ float checkCellDot(
     const float4 geoData,
-    const float4 angleData,
+    const float2 cellCenter,
     const float2 pixelPos,
     const float aaEdgeWidth,
     const int dotShape,
     const float cellBasePitch,
-    const float lineAngle)
+    const float hatchNX,
+    const float hatchNY)
 {
-    const float dotRadius = geoData.z;
+    const float dotRadius = geoData.x;
     if (dotRadius <= 0.0f) return 0.0f;
     if (dotRadius <= DOT_RADIUS_THRESHOLD && aaEdgeWidth <= 0.0f) return 0.0f;
 
-    const float2 cellCenter = to_float2(geoData.x, geoData.y);
-    const float finalAspect = geoData.w;
+    const float finalAspect = geoData.y;
+    const float cosA = geoData.z;
+    const float sinA = geoData.w;
+
     float bbSize = dotRadius + BOUNDING_BOX_MARGIN + aaEdgeWidth;
     // For line-based shapes, expand bounding box to allow continuous lines.
     if (dotShape >= 3) bbSize = _fmaxf(bbSize, cellBasePitch * 1.5f);
 
     const float2 diff = pixelPos - cellCenter;
     // --- Apply Angle Jitter ---
-    float2 rotatedDiff = diff;
-    const float finalAngle = angleData.x;
-    if (finalAngle != 0.0f) {
-        const float cosA = angleData.y;
-        const float sinA = angleData.z;
-        rotatedDiff.x = diff.x * cosA - diff.y * sinA;
-        rotatedDiff.y = diff.x * sinA + diff.y * cosA;
-    }
+    float2 rotatedDiff;
+    rotatedDiff.x = diff.x * cosA - diff.y * sinA;
+    rotatedDiff.y = diff.x * sinA + diff.y * cosA;
 
     const float2 absDiff = to_float2(_fabs(rotatedDiff.x), _fabs(rotatedDiff.y));
     if (absDiff.x > bbSize || absDiff.y > bbSize) return 0.0f;
@@ -657,7 +637,7 @@ __DEVICE__ float checkCellDot(
     if (finalAspect > 1.0f) {
         measureDiff.x *= finalAspect; // Compress X-axis for tall dots
     } else if (finalAspect < 1.0f) {
-        measureDiff.y *= angleData.w; // Use pre-calculated recipAspect
+        measureDiff.y *= _frecip(finalAspect);
     }
 
     if (dotShape == 0) { // Circle
@@ -676,13 +656,8 @@ __DEVICE__ float checkCellDot(
         if (dist >= dotRadius) return 0.0f;
         return _saturatef((dotRadius - dist) / aaEdgeWidth);
     } else if (dotShape == 3 || dotShape == 4) { // Line or Crosshatch
-        // Global parallel line pattern
-        const float lineAngleNorm = lineAngle * (1.0f / 180.0f);
-        const float nx = _sinpif(lineAngleNorm);
-        const float ny = -_cospif(lineAngleNorm);
-        
         // Project pixel position onto the line normal for global phase
-        const float proj1 = _fmaf(pixelPos.x, nx, pixelPos.y * ny);
+        const float proj1 = _fmaf(pixelPos.x, hatchNX, pixelPos.y * hatchNY);
         const float pitch = cellBasePitch;
         
         // Distance to global line center
@@ -699,8 +674,8 @@ __DEVICE__ float checkCellDot(
         }
         
         if (dotShape == 4) { // Crosshatch
-            const float nx2 = _cospif(lineAngleNorm);
-            const float ny2 = _sinpif(lineAngleNorm);
+            const float nx2 = -hatchNY;
+            const float ny2 = hatchNX;
             const float proj2 = _fmaf(pixelPos.x, nx2, pixelPos.y * ny2);
             const float phase2 = proj2 - _floorf(_fdivide(proj2, pitch)) * pitch;
             const float dist2 = _fabs(phase2 - pitch * 0.5f);
@@ -726,7 +701,6 @@ __DEVICE__ float checkCellDot(
 }
 
 
-// Neighbor cell relative offset calculator
 // Neighbor cell relative offset calculator
 __DEVICE__ float2 getNeighborOffset(const int index, const int isOddRow, const float gridStaggerX)
 {
@@ -763,7 +737,6 @@ __DEVICE__ float4 blendDotOver(
 }
 
 // Helper: Computes radial UV offsets for Transverse Chromatic Aberration
-// Helper: Computes radial UV offsets for Transverse Chromatic Aberration
 __DEVICE__ void calculateRadialShift(
     const float2 uv,
     const float shiftVal,
@@ -777,86 +750,27 @@ __DEVICE__ void calculateRadialShift(
     shiftBOFF->y =  uvRel.y * shiftVal;
 }
 
-// (BestCellState struct removed for GPU compatibility)
-
-// Evaluates a candidate cell and updates the best cell state.
-__DEVICE__ void evaluateCandidateCell(
-    const float2 candidateGridPos,
-    const float2 pixelPos,
-    const float2 cellGridDim,
-    __TEXTURE2D__ geometryBuffer,
-    __TEXTURE2D__ colorBuffer,
-    __TEXTURE2D__ contextBuffer,
-    const float cellBasePitch,
-    const float aaEdgeWidth,
-    const int dotShape,
-    const float4 defaultDotColor,
-    const int useOriginalColorFlag,
-    const int colorReduction,
-    const float shiftVal,
-    const float lineAngle,
-    __CONSTANTREF__ RenderParams *params,
-    float *bestStrength,
-    float *bestCoverage,
-    float4 *bestDotColor)
-{
-    // Retrieve dot geometry (center, radius, aspect) from the intermediate buffers
-    const float2 invGrid = to_float2(_frecip((float)cellGridDim.x), _frecip((float)cellGridDim.y));
-    const float2 uv = (candidateGridPos + to_float2(0.5f, 0.5f)) * invGrid;
-    
-    if (uv.x < 0.0f || uv.x >= 1.0f || uv.y < 0.0f || uv.y >= 1.0f) return;
-
-    const float4 geoData = _tex2DVec4(geometryBuffer, uv.x, uv.y);
-    const float4 angleData = _tex2DVec4(contextBuffer, uv.x, uv.y);
-    const float coverage = checkCellDot(geoData, angleData, pixelPos, aaEdgeWidth, dotShape, cellBasePitch, lineAngle);
-    if (coverage <= 0.0f) return;
-
-    // Determine the final dot color and its selection strength
-    float4 dotColor = defaultDotColor;
-    float selectionStrength = coverage;
-
-    if (useOriginalColorFlag != 0) {
-        // Sample color from the source image buffer at the candidate's cell position
-        if (shiftVal == 0.0f) {
-            dotColor = _tex2DVec4(colorBuffer, uv.x, uv.y);
-        } else {
-            // Apply radial chromatic aberration sampling if active
-            float2 rOffset, bOffset;
-            calculateRadialShift(uv, shiftVal, &rOffset, &bOffset);
-
-            const float4 cR = _tex2DVec4(colorBuffer, uv.x + rOffset.x, uv.y + rOffset.y);
-            const float4 cG = _tex2DVec4(colorBuffer, uv.x, uv.y);
-            const float4 cB = _tex2DVec4(colorBuffer, uv.x + bOffset.x, uv.y + bOffset.y);
-            dotColor = to_float4(cR.x, cG.y, cB.z, cG.w);
-        }
-
-        if (colorReduction > 0) {
-            dotColor = applyColorReduction(dotColor, params);
-        }
-        
-        // Ensure transparency follows the UI setting (userAlpha)
-        dotColor.w = defaultDotColor.w;
-
-        // Weight strength by luminance: darker spots on light paper should be prioritized if overlapping
-        const float luma = _fmaf(dotColor.x, LUMA_R, _fmaf(dotColor.y, LUMA_G, dotColor.z * LUMA_B));
-        selectionStrength *= _fmaxf(1.0f - luma, 0.0f);
-    }
-
-    // Update the winner if this candidate is more 'prominent' than current best
-    const float diff = selectionStrength - *bestStrength;
-    if (diff > 1e-4f || (_fabs(diff) <= 1e-4f && coverage > *bestCoverage)) {
-        *bestStrength = selectionStrength;
-        *bestCoverage = coverage;
-        *bestDotColor = dotColor;
-    }
+// Helper: Reconstructs cell center on-the-fly
+__DEVICE__ float2 getCellCenter(int cx, int cy, float pitchX, float pitchY, float gridStaggerX, float jitterPhase, float positionJitter, float4 rnd) {
+    const float halfX = pitchX * 0.5f;
+    const float halfY = pitchY * 0.5f;
+    const float rowOff = (float)(cy & 1u) * (-halfX * gridStaggerX);
+    return to_float2(_fmaf((float)cx, pitchX, halfX + rowOff + (rnd.x * positionJitter * halfX)), _fmaf((float)cy, pitchY, (rnd.y * positionJitter * halfY)));
 }
 
+// Helper: Reconstructs random values for a cell
+__DEVICE__ float4 getCellRnd(int cx, int cy, float jitterPhase) {
+    const float phaseBaseF = _floorf(jitterPhase);
+    const uint b0 = (uint)phaseBaseF;
+    const uint b1 = b0 + 1u;
+    const float t = (jitterPhase - phaseBaseF) * (jitterPhase - phaseBaseF) * _fmaf(-2.0f, (jitterPhase - phaseBaseF), 3.0f);
+    return interpolateHash4((uint)cx, (uint)cy, b0, b1, t, 0u, 10007u, 9973u, 2191590403u);
+}
 
 __KERNEL__ void RenderDotsKernel(
     __CONSTANTREF__ RenderParams *params,
     __TEXTURE2D__ geometryBuffer,
     __TEXTURE2D__ colorBuffer,
-    __TEXTURE2D__ contextBuffer,
     __TEXTURE2D__ src_img,
     __TEXTURE2D_WRITE__ dst)
 {
@@ -864,37 +778,16 @@ __KERNEL__ void RenderDotsKernel(
 
     const int srcW = params->srcSize[0];
     const int srcH = params->srcSize[1];
-    
-    if (x >= srcW || y >= srcH)
-        return;
+    if (x >= srcW || y >= srcH) return;
 
-    const float2 pixelPos = to_float2((float)x, (float)y);
-
-    // -------------------------------------------------------------------------
-    // -- Step 1: Grid Mapping
-    // -------------------------------------------------------------------------
+    // Unload constant parameters to local registers (Optimization)
     const float cellBasePitch = params->cellBasePitch;
     const float pitchX = params->cellPitchX;
     const float pitchY = params->cellPitchY;
-    const float2 cellPitch = to_float2(pitchX, pitchY);
-    const float2 halfPitch = cellPitch * 0.5f;
-
-    // Calculate which cell index the current pixel belongs to
-    const int  cellIdxY = (int)_floorf((pixelPos.y + halfPitch.y) / cellPitch.y);
-    const int  isOddRow = (cellIdxY & 1);
-    
-    // Account for staggered grid offset (X-shift applied to odd rows)
-    const float gridStaggerX  = params->gridStaggerX;
-    const float staggerX      = halfPitch.x * gridStaggerX;
-    const float adjustedX     = _fmaf((float)isOddRow, staggerX, pixelPos.x);
-    const int   cellIdxX      = (int)_floorf(adjustedX / cellPitch.x);
-    
-    const float2 mainCellGridPos = to_float2((float)cellIdxX, (float)cellIdxY);
-    const float2 gridDimensions  = to_float2((float)params->cellGridNum[0], (float)params->cellGridNum[1]);
-
-    // -------------------------------------------------------------------------
-    // -- Step 2: Input Sampling & Background Setup
-    // -------------------------------------------------------------------------
+    const float gridStaggerX = params->gridStaggerX;
+    const float jitterPhase = params->jitterPhase;
+    const float positionJitter = params->positionJitter;
+    const float2 gridDimensions = to_float2((float)params->cellGridNum[0], (float)params->cellGridNum[1]);
     const float4 paperColor = to_float4(params->paperColor[0], params->paperColor[1], params->paperColor[2], params->paperColor[3]);
     const float4 userDotColor = to_float4(params->dotColor[0], params->dotColor[1], params->dotColor[2], params->dotColor[3]);
     const int useOriginalColorFlag = params->useOriginalColor;
@@ -902,8 +795,33 @@ __KERNEL__ void RenderDotsKernel(
     const int dotShape = params->dotShape;
     const int blendIn = (params->blendWithInput != 0);
     const float aaEdgeWidth = (params->enableAntialias != 0) ? params->aaEdgeWidth : 0.0f;
-    const float lineAngle = params->lineAngle;
     const float shiftVal = _mix(0.0f, params->rgbShift, (float)(blendIn || (useOriginalColorFlag != 0)));
+    const float hatchNX = params->hatchNX;
+    const float hatchNY = params->hatchNY;
+    const int mappingMode = params->mappingMode;
+    const int paletteSize = params->paletteSize;
+
+    const float2 invGrid = to_float2(_frecip(gridDimensions.x), _frecip(gridDimensions.y));
+
+    const float2 pixelPos = to_float2((float)x, (float)y);
+
+    // -------------------------------------------------------------------------
+    // -- Step 1: Grid Mapping
+    // -------------------------------------------------------------------------
+    const float2 cellPitch = to_float2(pitchX, pitchY);
+    const float2 halfPitch = cellPitch * 0.5f;
+
+    const int  cellIdxY = (int)_floorf((pixelPos.y + halfPitch.y) / pitchY);
+    const int  isOddRow = (cellIdxY & 1);
+    const float staggerX = halfPitch.x * gridStaggerX;
+    const float adjustedX = _fmaf((float)isOddRow, staggerX, pixelPos.x);
+    const int   cellIdxX = (int)_floorf(adjustedX / pitchX);
+    
+    const float2 mainCellGridPos = to_float2((float)cellIdxX, (float)cellIdxY);
+
+    // -------------------------------------------------------------------------
+    // -- Step 2: Input Sampling & Background Setup
+    // -------------------------------------------------------------------------
 
     float4 backgroundImage = paperColor;
 
@@ -923,7 +841,7 @@ __KERNEL__ void RenderDotsKernel(
             backgroundImage = to_float4(sR.x, sG.y, sB.z, sG.w);
         }
         if (useOriginalColorFlag != 0 && colorReduction > 0) {
-            backgroundImage = applyColorReduction(backgroundImage, params);
+            backgroundImage = applyColorReduction(backgroundImage, mappingMode, paletteSize, colorReduction, params);
         }
     }
 
@@ -934,40 +852,49 @@ __KERNEL__ void RenderDotsKernel(
     float bestStrength = -1.0f;
     float4 bestDotColor = _mix(userDotColor, backgroundImage, (float)(blendIn && (useOriginalColorFlag != 0)));
 
-    // First, evaluate the cell directly containing this pixel
-    evaluateCandidateCell(mainCellGridPos, pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, cellBasePitch, aaEdgeWidth, dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, lineAngle, params, &bestStrength, &bestCoverage, &bestDotColor);
+    // Unified Candidate Evaluation (Neighbor Search + Main Cell)
 
-    // Coordinate mapping to determine relative position within the cell
-    const float2 cellCenter = to_float2(
-        _fmaf((float)cellIdxX, cellPitch.x, _fmaf((float)isOddRow, staggerX, halfPitch.x)),
-        _fmaf((float)cellIdxY, cellPitch.y, halfPitch.y)
-    );
-    const float2 relPos = pixelPos - cellCenter;
+    const int neighborCount = (gridStaggerX != 0.0f) ? 6 : 8;
+    for (int i = -1; i < neighborCount; i++) {
+        const float2 curGridPos = (i == -1) ? mainCellGridPos : (mainCellGridPos + getNeighborOffset(i, isOddRow, gridStaggerX));
+        const float2 uv = (curGridPos + to_float2(0.5f, 0.5f)) * invGrid;
+        
+        if (uv.x < 0.0f || uv.x >= 1.0f || uv.y < 0.0f || uv.y >= 1.0f) continue;
 
-    if (((cellPitch.x + cellPitch.y) * 0.5f) < MIN_CHECK_RADIUS) {
-        // High-density optimization: Only check neighbors in the closest quadrant
-        const float2 threshold = halfPitch * 0.5f;
-        if (_fabs(relPos.x) > threshold.x) {
-            const int xIdx = (relPos.x > 0.0f) ? 2 : 5;
-            evaluateCandidateCell(mainCellGridPos + getNeighborOffset(xIdx, isOddRow, gridStaggerX), pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, cellBasePitch, aaEdgeWidth, dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, lineAngle, params, &bestStrength, &bestCoverage, &bestDotColor);
-        }
-        if (_fabs(relPos.y) > threshold.y) {
-            int yIdx;
-            if (gridStaggerX != 0.0f) {
-                // Staggered lookup
-                if (relPos.y > 0.0f) yIdx = isOddRow ? 3 : 4;
-                else yIdx = isOddRow ? 0 : 1;
-            } else {
-                // Orthogonal lookup
-                yIdx = (relPos.y > 0.0f) ? 5 : 1;
+        const float4 rnd = getCellRnd((int)curGridPos.x, (int)curGridPos.y, jitterPhase);
+        const float2 cellPos = getCellCenter((int)curGridPos.x, (int)curGridPos.y, pitchX, pitchY, gridStaggerX, jitterPhase, positionJitter, rnd);
+
+        const float4 geoData = _tex2DVec4(geometryBuffer, uv.x, uv.y);
+        const float coverage = checkCellDot(geoData, cellPos, pixelPos, aaEdgeWidth, dotShape, cellBasePitch, hatchNX, hatchNY);
+        
+        if (coverage > 0.0f) {
+            float4 dotColor = userDotColor;
+            float selectionStrength = coverage;
+
+            if (useOriginalColorFlag != 0) {
+                if (shiftVal == 0.0f) {
+                    dotColor = _tex2DVec4(colorBuffer, uv.x, uv.y);
+                } else {
+                    float2 rOff, bOff;
+                    calculateRadialShift(uv, shiftVal, &rOff, &bOff);
+                    const float4 cR = _tex2DVec4(colorBuffer, uv.x + rOff.x, uv.y + rOff.y);
+                    const float4 cG = _tex2DVec4(colorBuffer, uv.x, uv.y);
+                    const float4 cB = _tex2DVec4(colorBuffer, uv.x + bOff.x, uv.y + bOff.y);
+                    dotColor = to_float4(cR.x, cG.y, cB.z, cG.w);
+                }
+
+                if (colorReduction > 0) dotColor = applyColorReduction(dotColor, mappingMode, paletteSize, colorReduction, params);
+                dotColor.w = userDotColor.w;
+                const float luma = _fmaf(dotColor.x, LUMA_R, _fmaf(dotColor.y, LUMA_G, dotColor.z * LUMA_B));
+                selectionStrength *= _fmaxf(1.0f - luma, 0.0f);
             }
-            evaluateCandidateCell(mainCellGridPos + getNeighborOffset(yIdx, isOddRow, gridStaggerX), pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, cellBasePitch, aaEdgeWidth, dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, lineAngle, params, &bestStrength, &bestCoverage, &bestDotColor);
-        }
-    } else {
-        // Broad Search: Required for large dots or sparse grids
-        const int neighborCount = (gridStaggerX != 0.0f) ? 6 : 8;
-        for (int i = 0; i < neighborCount; i++) {
-            evaluateCandidateCell(mainCellGridPos + getNeighborOffset(i, isOddRow, gridStaggerX), pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, cellBasePitch, aaEdgeWidth, dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, lineAngle, params, &bestStrength, &bestCoverage, &bestDotColor);
+
+            const float diff = selectionStrength - bestStrength;
+            if (diff > 1e-4f || (_fabs(diff) <= 1e-4f && coverage > bestCoverage)) {
+                bestStrength = selectionStrength;
+                bestCoverage = coverage;
+                bestDotColor = dotColor;
+            }
         }
     }
 
@@ -1516,12 +1443,6 @@ function Process(req)
         IMG_Depth = 8,
     })
 
-    local cellInfo3 = Image({
-        IMG_Width = cellGridNumX,
-        IMG_Height = cellGridNumY,
-        IMG_Depth = 8,
-    })
-
     local out = Image({ IMG_Like = img })
 
     -- Execute kernel for cell information accumulation
@@ -1558,7 +1479,6 @@ function Process(req)
         cellInfoNode:AddInput("src", img)
         cellInfoNode:AddOutput("dst_info1", cellInfo1)
         cellInfoNode:AddOutput("dst_info2", cellInfo2)
-        cellInfoNode:AddOutput("dst_info3", cellInfo3)
 
         local success = cellInfoNode:RunSession(req)
         if not success then
@@ -1594,10 +1514,15 @@ function Process(req)
         params.dotShape = dotShape
         params.rgbShift = rgbShift
         params.gridStaggerX = gridStaggerX
-        params.lineAngle = lineAngle
+        -- Pre-calculate hatching vector
+        local angleRad = lineAngle * math.pi / 180.0
+        params.hatchNX = math.sin(angleRad)
+        params.hatchNY = -math.cos(angleRad)
         params.cellPitchX = cellPitchX
         params.cellPitchY = cellPitchY
         params.cellBasePitch = cellBasePitch
+        params.jitterPhase = jitterPhase
+        params.positionJitter = positionJitter
         -- Transfer palette data for hardware themes
         local theme = ColorThemes[colorReduction + 1]
         
@@ -1638,7 +1563,6 @@ function Process(req)
         --      TEX_NORMALIZED_COORDS_FALSE)
         renderNode:AddInput("cell_info1", cellInfo1)
         renderNode:AddInput("cell_info2", cellInfo2)
-        renderNode:AddInput("cell_info3", cellInfo3)
         renderNode:AddInput("src_img", img)
         renderNode:AddOutput("dst", out)
 
@@ -1656,7 +1580,6 @@ function Process(req)
     if ShowCellInfo then
         OutCellInfo1:Set(req, cellInfo1)
         OutCellInfo2:Set(req, cellInfo2)
-        OutCellInfo3:Set(req, cellInfo3)
     end
     OutImage:Set(req, out)
 end
