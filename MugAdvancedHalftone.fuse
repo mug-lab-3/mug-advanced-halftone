@@ -859,8 +859,7 @@ __KERNEL__ void RenderDotsKernel(
         const float2 curGridPos = (i == -1) ? mainCellGridPos : (mainCellGridPos + getNeighborOffset(i, isOddRow, gridStaggerX));
         const float2 uv = (curGridPos + to_float2(0.5f, 0.5f)) * invGrid;
         
-        if (uv.x < 0.0f || uv.x >= 1.0f || uv.y < 0.0f || uv.y >= 1.0f) continue;
-
+        // Safety: Out-of-bounds UVs are handled automatically by Hardware CLAMP + zero-radius margin cells.
         const float4 rnd = getCellRnd((int)curGridPos.x, (int)curGridPos.y, jitterPhase);
         const float2 cellPos = getCellCenter((int)curGridPos.x, (int)curGridPos.y, pitchX, pitchY, gridStaggerX, jitterPhase, positionJitter, rnd);
 
