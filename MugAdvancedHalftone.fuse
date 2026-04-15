@@ -611,134 +611,107 @@ __DEVICE__ float4 applyColorReduction(float4 color, __CONSTANTREF__ RenderParams
 
 // Checks presence and geometry of a dot within a cell, returning coverage factor
 __DEVICE__ float checkCellDot(
-    const float2 cellPos,
+    const float4 geoData,
+    const float4 angleData,
     const float2 pixelPos,
-    const float2 cellGridNum,
-    __TEXTURE2D__ cell_info1,
-    __TEXTURE2D__ cell_info3,
     const float aaEdgeWidth,
     const int dotShape,
-    __CONSTANTREF__ RenderParams *params,
-    const float cellBasePitch)
+    const float cellBasePitch,
+    const float lineAngle)
 {
-    if (cellPos.x >= 0.0f && cellPos.x < cellGridNum.x &&
-        cellPos.y >= 0.0f && cellPos.y < cellGridNum.y) {
+    const float dotRadius = geoData.z;
+    if (dotRadius <= 0.0f) return 0.0f;
+    if (dotRadius <= DOT_RADIUS_THRESHOLD && aaEdgeWidth <= 0.0f) return 0.0f;
 
-        const float2 cellUV = (cellPos + to_float2(0.5f, 0.5f)) / cellGridNum;
+    const float2 cellCenter = to_float2(geoData.x, geoData.y);
+    const float finalAspect = geoData.w;
+    float bbSize = dotRadius + BOUNDING_BOX_MARGIN + aaEdgeWidth;
+    // For line-based shapes, expand bounding box to allow continuous lines.
+    if (dotShape >= 3) bbSize = _fmaxf(bbSize, cellBasePitch * 1.5f);
 
-        const float4 geoData = _tex2DVec4(cell_info1, cellUV.x, cellUV.y);
-        const float2 cellCenter = to_float2(geoData.x, geoData.y);
-        const float dotRadius = geoData.z;
-        const float finalAspect = geoData.w;
+    const float2 diff = pixelPos - cellCenter;
+    // --- Apply Angle Jitter ---
+    float2 rotatedDiff = diff;
+    const float finalAngle = angleData.x;
+    if (finalAngle != 0.0f) {
+        const float cosA = angleData.y;
+        const float sinA = angleData.z;
+        rotatedDiff.x = diff.x * cosA - diff.y * sinA;
+        rotatedDiff.y = diff.x * sinA + diff.y * cosA;
+    }
 
-        if (dotRadius <= 0.0f)
-            return 0.0f;
+    const float2 absDiff = to_float2(_fabs(rotatedDiff.x), _fabs(rotatedDiff.y));
+    if (absDiff.x > bbSize || absDiff.y > bbSize) return 0.0f;
 
-        if (dotRadius <= DOT_RADIUS_THRESHOLD && aaEdgeWidth <= 0.0f)
-            return 0.0f;
+    // Scale distance to enforce aspect ratio constraints (Scaling inwards prevents dots from clipping out of bounds)
+    float2 measureDiff = absDiff;
+    if (finalAspect > 1.0f) {
+        measureDiff.x *= finalAspect; // Compress X-axis for tall dots
+    } else if (finalAspect < 1.0f) {
+        measureDiff.y *= angleData.w; // Use pre-calculated recipAspect
+    }
 
-        float bbSize = dotRadius + BOUNDING_BOX_MARGIN + aaEdgeWidth;
-        // For line-based shapes, expand bounding box to allow continuous lines.
-        if (dotShape >= 3) bbSize = _fmaxf(bbSize, cellBasePitch * 1.5f);
-
-        const float2 diff = pixelPos - cellCenter;
+    if (dotShape == 0) { // Circle
+        const float dist = _hypotf(measureDiff.x, measureDiff.y);
+        if (aaEdgeWidth <= 0.0f) return (dist <= dotRadius) ? 1.0f : 0.0f;
+        if (dist >= dotRadius) return 0.0f;
+        return _saturatef((dotRadius - dist) / aaEdgeWidth);
+    } else if (dotShape == 1) { // Square
+        const float dist = _fmaxf(measureDiff.x, measureDiff.y);
+        if (aaEdgeWidth <= 0.0f) return (dist <= dotRadius) ? 1.0f : 0.0f;
+        if (dist >= dotRadius) return 0.0f;
+        return _saturatef((dotRadius - dist) / aaEdgeWidth);
+    } else if (dotShape == 2) { // Diamond
+        const float dist = (measureDiff.x + measureDiff.y) * 0.70710678f;
+        if (aaEdgeWidth <= 0.0f) return (dist <= dotRadius) ? 1.0f : 0.0f;
+        if (dist >= dotRadius) return 0.0f;
+        return _saturatef((dotRadius - dist) / aaEdgeWidth);
+    } else if (dotShape == 3 || dotShape == 4) { // Line or Crosshatch
+        // Global parallel line pattern
+        const float lineAngleNorm = lineAngle * (1.0f / 180.0f);
+        const float nx = _sinpif(lineAngleNorm);
+        const float ny = -_cospif(lineAngleNorm);
         
-        // --- Apply Angle Jitter ---
-        float2 rotatedDiff = diff;
-        const float4 angleData = _tex2DVec4(cell_info3, cellUV.x, cellUV.y);
-        const float finalAngle = angleData.x;
-        if (finalAngle != 0.0f) {
-            const float cosA = angleData.y;
-            const float sinA = angleData.z;
-            rotatedDiff.x = diff.x * cosA - diff.y * sinA;
-            rotatedDiff.y = diff.x * sinA + diff.y * cosA;
-        }
-
-        const float2 absDiff = to_float2(_fabs(rotatedDiff.x), _fabs(rotatedDiff.y));
-
-        if (absDiff.x > bbSize || absDiff.y > bbSize)
-            return 0.0f;
-
-        // Scale distance to enforce aspect ratio constraints (Scaling inwards prevents dots from clipping out of bounds)
-        float2 measureDiff = absDiff;
-        if (finalAspect > 1.0f) {
-            measureDiff.x *= finalAspect; // Compress X-axis for tall dots
-        } else if (finalAspect < 1.0f) {
-            measureDiff.y *= angleData.w; // Use pre-calculated recipAspect
-        }
-
-        if (dotShape == 0) { // Circle
-            const float dist = _hypotf(measureDiff.x, measureDiff.y);
-
-            if (aaEdgeWidth <= 0.0f) {
-                return (dist <= dotRadius) ? 1.0f : 0.0f;
+        // Project pixel position onto the line normal for global phase
+        const float proj1 = _fmaf(pixelPos.x, nx, pixelPos.y * ny);
+        const float pitch = cellBasePitch;
+        
+        // Distance to global line center
+        const float phase1 = proj1 - _floorf(_fdivide(proj1, pitch)) * pitch;
+        const float dist1 = _fabs(phase1 - pitch * 0.5f);
+        
+        float coverage = 0.0f;
+        if (aaEdgeWidth <= 0.0f) {
+            coverage = (dist1 <= dotRadius) ? 1.0f : 0.0f;
+        } else {
+            if (dist1 < dotRadius) {
+                coverage = _saturatef((dotRadius - dist1) / aaEdgeWidth);
             }
-
-            if (dist >= dotRadius) return 0.0f;
-
-            const float innerR = _fmaxf(dotRadius - aaEdgeWidth, 0.0f);
-            if (dist <= innerR) return 1.0f;
-
-            return _saturatef((dotRadius - dist) / aaEdgeWidth);
-        } else if (dotShape == 1) { // Square
-            const float dist = _fmaxf(measureDiff.x, measureDiff.y);
-            if (aaEdgeWidth <= 0.0f) return (dist <= dotRadius) ? 1.0f : 0.0f;
-            if (dist >= dotRadius) return 0.0f;
-            if (dist <= _fmaxf(dotRadius - aaEdgeWidth, 0.0f)) return 1.0f;
-            return _saturatef((dotRadius - dist) / aaEdgeWidth);
-        } else if (dotShape == 2) { // Diamond
-            const float dist = (measureDiff.x + measureDiff.y) * 0.70710678f;
-            if (aaEdgeWidth <= 0.0f) return (dist <= dotRadius) ? 1.0f : 0.0f;
-            if (dist >= dotRadius) return 0.0f;
-            if (dist <= _fmaxf(dotRadius - aaEdgeWidth, 0.0f)) return 1.0f;
-            return _saturatef((dotRadius - dist) / aaEdgeWidth);
-        } else if (dotShape == 3 || dotShape == 4) { // Line or Crosshatch
-            // Global parallel line pattern
-            const float lineAngleNorm = params->lineAngle * (1.0f / 180.0f);
-            const float nx = _sinpif(lineAngleNorm);
-            const float ny = -_cospif(lineAngleNorm);
+        }
+        
+        if (dotShape == 4) { // Crosshatch
+            const float nx2 = _cospif(lineAngleNorm);
+            const float ny2 = _sinpif(lineAngleNorm);
+            const float proj2 = _fmaf(pixelPos.x, nx2, pixelPos.y * ny2);
+            const float phase2 = proj2 - _floorf(_fdivide(proj2, pitch)) * pitch;
+            const float dist2 = _fabs(phase2 - pitch * 0.5f);
             
-            // Project pixel position onto the line normal for global phase
-            const float proj1 = _fmaf(pixelPos.x, nx, pixelPos.y * ny);
-            const float pitch = cellBasePitch;
-            
-            // Distance to global line center
-            const float phase1 = proj1 - _floorf(_fdivide(proj1, pitch)) * pitch;
-            const float dist1 = _fabs(phase1 - pitch * 0.5f);
-            
-            float coverage = 0.0f;
+            // Secondary hatch for shadows
+            const float maxR = pitch * 0.75f;
+            const float dotRatio = dotRadius / _fmaxf(0.01f, maxR);
+            const float dotRadius2 = _saturatef((dotRatio - 0.5f) * 2.0f) * maxR;
+
+            float coverage2 = 0.0f;
             if (aaEdgeWidth <= 0.0f) {
-                coverage = (dist1 <= dotRadius) ? 1.0f : 0.0f;
+                coverage2 = (dist2 <= dotRadius2) ? 1.0f : 0.0f;
             } else {
-                if (dist1 < dotRadius) {
-                    coverage = _saturatef((dotRadius - dist1) / aaEdgeWidth);
+                if (dist2 < dotRadius2) {
+                    coverage2 = _saturatef((dotRadius2 - dist2) / aaEdgeWidth);
                 }
             }
-            
-            if (dotShape == 4) { // Crosshatch
-                const float nx2 = _cospif(lineAngleNorm);
-                const float ny2 = _sinpif(lineAngleNorm);
-                const float proj2 = _fmaf(pixelPos.x, nx2, pixelPos.y * ny2);
-                const float phase2 = proj2 - _floorf(_fdivide(proj2, pitch)) * pitch;
-                const float dist2 = _fabs(phase2 - pitch * 0.5f);
-                
-                // Secondary hatch for shadows
-                const float maxR = pitch * 0.75f;
-                const float dotRatio = dotRadius / _fmaxf(0.01f, maxR);
-                const float dotRadius2 = _saturatef((dotRatio - 0.5f) * 2.0f) * maxR;
-
-                float coverage2 = 0.0f;
-                if (aaEdgeWidth <= 0.0f) {
-                    coverage2 = (dist2 <= dotRadius2) ? 1.0f : 0.0f;
-                } else {
-                    if (dist2 < dotRadius2) {
-                        coverage2 = _saturatef((dotRadius2 - dist2) / aaEdgeWidth);
-                    }
-                }
-                coverage = _fmaxf(coverage, coverage2);
-            }
-            return coverage;
+            coverage = _fmaxf(coverage, coverage2);
         }
+        return coverage;
     }
     return 0.0f;
 }
@@ -826,7 +799,14 @@ __DEVICE__ void evaluateCandidateCell(
     const float cellBasePitch)
 {
     // Retrieve dot geometry (center, radius, aspect) from the intermediate buffers
-    const float coverage = checkCellDot(candidateGridPos, pixelPos, cellGridDim, geometryBuffer, contextBuffer, aaEdgeWidth, dotShape, params, cellBasePitch);
+    const float2 invGrid = to_float2(_frecip((float)cellGridDim.x), _frecip((float)cellGridDim.y));
+    const float2 uv = (candidateGridPos + to_float2(0.5f, 0.5f)) * invGrid;
+    
+    if (uv.x < 0.0f || uv.x >= 1.0f || uv.y < 0.0f || uv.y >= 1.0f) return;
+
+    const float4 geoData = _tex2DVec4(geometryBuffer, uv.x, uv.y);
+    const float4 angleData = _tex2DVec4(contextBuffer, uv.x, uv.y);
+    const float coverage = checkCellDot(geoData, angleData, pixelPos, aaEdgeWidth, dotShape, cellBasePitch, params->lineAngle);
     if (coverage <= 0.0f) return;
 
     // Determine the final dot color and its selection strength
@@ -835,9 +815,6 @@ __DEVICE__ void evaluateCandidateCell(
 
     if (useOriginalColorFlag != 0) {
         // Sample color from the source image buffer at the candidate's cell position
-        const float2 invGrid = to_float2(_frecip((float)cellGridDim.x), _frecip((float)cellGridDim.y));
-        const float2 uv = (candidateGridPos + to_float2(0.5f, 0.5f)) * invGrid;
-        
         if (shiftVal == 0.0f) {
             dotColor = _tex2DVec4(colorBuffer, uv.x, uv.y);
         } else {
