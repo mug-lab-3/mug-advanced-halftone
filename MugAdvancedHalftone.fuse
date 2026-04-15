@@ -31,7 +31,7 @@ created using this Fuse. Feel free to use it for both commercial and non-commerc
 ShowCellInfo = false
 
 -- Set version globally for easy maintenance
-VERSION = 2.34
+VERSION = 2.35
 
 --******************************************************************************************************
 FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
@@ -718,29 +718,21 @@ __DEVICE__ float checkCellDot(
 
 
 // Neighbor cell relative offset calculator
+// Neighbor cell relative offset calculator
 __DEVICE__ float2 getNeighborOffset(const int index, const int isOddRow, const float gridStaggerX)
 {
-    // Hexagonal grid layout
     if (gridStaggerX != 0.0f) {
-        const float offset = isOddRow != 0 ? -1.0f : 0.0f;
-        if (index == 0) return to_float2(offset, -1.0f);
-        if (index == 1) return to_float2(offset + 1.0f, -1.0f);
-        if (index == 2) return to_float2( 1.0f,  0.0f);
-        if (index == 3) return to_float2(offset + 1.0f,  1.0f);
-        if (index == 4) return to_float2(offset,  1.0f);
-        if (index == 5) return to_float2(-1.0f,  0.0f);
+        // Hexagonal grid (6 neighbors) - Offset varies based on row parity
+        const float off = (isOddRow != 0) ? -1.0f : 0.0f;
+        const float tx[6] = { off, off + 1.0f, 1.0f, off + 1.0f, off, -1.0f };
+        const float ty[6] = { -1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f };
+        return to_float2(tx[index], ty[index]);
     } else {
-        // Standard orthogonal grid
-        if (index == 0) return to_float2(-1.0f, -1.0f);
-        if (index == 1) return to_float2( 0.0f, -1.0f);
-        if (index == 2) return to_float2( 1.0f, -1.0f);
-        if (index == 3) return to_float2( 1.0f,  0.0f);
-        if (index == 4) return to_float2( 1.0f,  1.0f);
-        if (index == 5) return to_float2( 0.0f,  1.0f);
-        if (index == 6) return to_float2(-1.0f,  1.0f);
-        if (index == 7) return to_float2(-1.0f,  0.0f);
+        // Standard orthogonal grid (8 neighbors)
+        const float tx[8] = { -1.0f,  0.0f,  1.0f,  1.0f, 1.0f, 0.0f, -1.0f, -1.0f };
+        const float ty[8] = { -1.0f, -1.0f, -1.0f,  0.0f, 1.0f, 1.0f,  1.0f,  0.0f };
+        return to_float2(tx[index], ty[index]);
     }
-    return to_float2(0.0f, 0.0f);
 }
 
 // Alpha blend overlay function for computing dot coverage
@@ -883,9 +875,10 @@ __KERNEL__ void RenderDotsKernel(
     const int  isOddRow = (cellIdxY & 1);
     
     // Account for staggered grid offset (X-shift applied to odd rows)
-    const float staggerX  = halfPitch.x * params->gridStaggerX;
-    const float adjustedX = _fmaf((float)isOddRow, staggerX, pixelPos.x);
-    const int   cellIdxX  = (int)_floorf(adjustedX / cellPitch.x);
+    const float gridStaggerX  = params->gridStaggerX;
+    const float staggerX      = halfPitch.x * gridStaggerX;
+    const float adjustedX     = _fmaf((float)isOddRow, staggerX, pixelPos.x);
+    const int   cellIdxX      = (int)_floorf(adjustedX / cellPitch.x);
     
     const float2 mainCellGridPos = to_float2((float)cellIdxX, (float)cellIdxY);
     const float2 gridDimensions  = to_float2((float)params->cellGridNum[0], (float)params->cellGridNum[1]);
@@ -935,45 +928,37 @@ __KERNEL__ void RenderDotsKernel(
     // First, evaluate the cell directly containing this pixel
     evaluateCandidateCell(mainCellGridPos, pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, cellBasePitch, aaEdgeWidth, dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, lineAngle, params, &bestStrength, &bestCoverage, &bestDotColor);
 
-    // Coordinate mapping to determine distances to neighboring cell boundaries
+    // Coordinate mapping to determine relative position within the cell
     const float2 cellCenter = to_float2(
         _fmaf((float)cellIdxX, cellPitch.x, _fmaf((float)isOddRow, staggerX, halfPitch.x)),
         _fmaf((float)cellIdxY, cellPitch.y, halfPitch.y)
     );
     const float2 relPos = pixelPos - cellCenter;
 
-    const float avgCellSize = (cellPitch.x + cellPitch.y) * 0.5f;
-    const int isHighDensity = (avgCellSize < MIN_CHECK_RADIUS);
-
-    if (isHighDensity != 0) {
-        // Optimization: In high-density grids, dots rarely overlap across more than one boundary.
-        // We only check the specific neighbors in the quadrant current pixel is closest to.
-        int checkIndices[2] = {-1, -1};
-        int checkCount = 0;
-        const float2 threshold = halfPitch * 0.5f; 
-        const float2 absRelPos = to_float2(_fabs(relPos.x), _fabs(relPos.y));
-
-        if (absRelPos.x > threshold.x) {
-            checkIndices[checkCount++] = (relPos.x > 0.0f) ? 2 : 5;
+    if (((cellPitch.x + cellPitch.y) * 0.5f) < MIN_CHECK_RADIUS) {
+        // High-density optimization: Only check neighbors in the closest quadrant
+        const float2 threshold = halfPitch * 0.5f;
+        if (_fabs(relPos.x) > threshold.x) {
+            const int xIdx = (relPos.x > 0.0f) ? 2 : 5;
+            evaluateCandidateCell(mainCellGridPos + getNeighborOffset(xIdx, isOddRow, gridStaggerX), pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, cellBasePitch, aaEdgeWidth, dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, lineAngle, params, &bestStrength, &bestCoverage, &bestDotColor);
         }
-        if (absRelPos.y > threshold.y) {
-            checkIndices[checkCount++] = (int)_mix(
-                _mix(1.0f, 5.0f, (float)(relPos.y > 0.0f)),
-                _mix((float)(isOddRow ? 0 : 1), (float)(isOddRow ? 3 : 4), (float)(relPos.y > 0.0f)),
-                (float)(params->gridStaggerX != 0.0f)
-            );
-            if (checkCount > 2) checkCount = 2; // Safety cap
-        }
-
-        for (int i = 0; i < checkCount; i++) {
-            const int idx = checkIndices[i];
-            if (idx >= 0) evaluateCandidateCell(mainCellGridPos + getNeighborOffset(idx, (int)isOddRow, params->gridStaggerX), pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, cellBasePitch, aaEdgeWidth, dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, lineAngle, params, &bestStrength, &bestCoverage, &bestDotColor);
+        if (_fabs(relPos.y) > threshold.y) {
+            int yIdx;
+            if (gridStaggerX != 0.0f) {
+                // Staggered lookup
+                if (relPos.y > 0.0f) yIdx = isOddRow ? 3 : 4;
+                else yIdx = isOddRow ? 0 : 1;
+            } else {
+                // Orthogonal lookup
+                yIdx = (relPos.y > 0.0f) ? 5 : 1;
+            }
+            evaluateCandidateCell(mainCellGridPos + getNeighborOffset(yIdx, isOddRow, gridStaggerX), pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, cellBasePitch, aaEdgeWidth, dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, lineAngle, params, &bestStrength, &bestCoverage, &bestDotColor);
         }
     } else {
-        // Broad Search: Required for large dots or loose grids
-        const int neighborCount = (params->gridStaggerX != 0.0f) ? 6 : 8;
+        // Broad Search: Required for large dots or sparse grids
+        const int neighborCount = (gridStaggerX != 0.0f) ? 6 : 8;
         for (int i = 0; i < neighborCount; i++) {
-            evaluateCandidateCell(mainCellGridPos + getNeighborOffset(i, (int)isOddRow, params->gridStaggerX), pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, cellBasePitch, aaEdgeWidth, dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, lineAngle, params, &bestStrength, &bestCoverage, &bestDotColor);
+            evaluateCandidateCell(mainCellGridPos + getNeighborOffset(i, isOddRow, gridStaggerX), pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, cellBasePitch, aaEdgeWidth, dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, lineAngle, params, &bestStrength, &bestCoverage, &bestDotColor);
         }
     }
 
