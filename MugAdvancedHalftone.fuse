@@ -786,17 +786,18 @@ __DEVICE__ void evaluateCandidateCell(
     __TEXTURE2D__ geometryBuffer,
     __TEXTURE2D__ colorBuffer,
     __TEXTURE2D__ contextBuffer,
+    const float cellBasePitch,
     const float aaEdgeWidth,
     const int dotShape,
     const float4 defaultDotColor,
     const int useOriginalColorFlag,
     const int colorReduction,
     const float shiftVal,
+    const float lineAngle,
     __CONSTANTREF__ RenderParams *params,
     float *bestStrength,
     float *bestCoverage,
-    float4 *bestDotColor,
-    const float cellBasePitch)
+    float4 *bestDotColor)
 {
     // Retrieve dot geometry (center, radius, aspect) from the intermediate buffers
     const float2 invGrid = to_float2(_frecip((float)cellGridDim.x), _frecip((float)cellGridDim.y));
@@ -806,7 +807,7 @@ __DEVICE__ void evaluateCandidateCell(
 
     const float4 geoData = _tex2DVec4(geometryBuffer, uv.x, uv.y);
     const float4 angleData = _tex2DVec4(contextBuffer, uv.x, uv.y);
-    const float coverage = checkCellDot(geoData, angleData, pixelPos, aaEdgeWidth, dotShape, cellBasePitch, params->lineAngle);
+    const float coverage = checkCellDot(geoData, angleData, pixelPos, aaEdgeWidth, dotShape, cellBasePitch, lineAngle);
     if (coverage <= 0.0f) return;
 
     // Determine the final dot color and its selection strength
@@ -896,9 +897,10 @@ __KERNEL__ void RenderDotsKernel(
     const float4 userDotColor = to_float4(params->dotColor[0], params->dotColor[1], params->dotColor[2], params->dotColor[3]);
     const int useOriginalColorFlag = params->useOriginalColor;
     const int colorReduction = params->colorReduction;
+    const int dotShape = params->dotShape;
     const int blendIn = (params->blendWithInput != 0);
-
     const float aaEdgeWidth = (params->enableAntialias != 0) ? params->aaEdgeWidth : 0.0f;
+    const float lineAngle = params->lineAngle;
     const float shiftVal = _mix(0.0f, params->rgbShift, (float)(blendIn || (useOriginalColorFlag != 0)));
 
     float4 backgroundImage = paperColor;
@@ -931,7 +933,7 @@ __KERNEL__ void RenderDotsKernel(
     float4 bestDotColor = _mix(userDotColor, backgroundImage, (float)(blendIn && (useOriginalColorFlag != 0)));
 
     // First, evaluate the cell directly containing this pixel
-    evaluateCandidateCell(mainCellGridPos, pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, params, &bestStrength, &bestCoverage, &bestDotColor, cellBasePitch);
+    evaluateCandidateCell(mainCellGridPos, pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, cellBasePitch, aaEdgeWidth, dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, lineAngle, params, &bestStrength, &bestCoverage, &bestDotColor);
 
     // Coordinate mapping to determine distances to neighboring cell boundaries
     const float2 cellCenter = to_float2(
@@ -965,13 +967,13 @@ __KERNEL__ void RenderDotsKernel(
 
         for (int i = 0; i < checkCount; i++) {
             const int idx = checkIndices[i];
-            if (idx >= 0) evaluateCandidateCell(mainCellGridPos + getNeighborOffset(idx, (int)isOddRow, params->gridStaggerX), pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, params, &bestStrength, &bestCoverage, &bestDotColor, cellBasePitch);
+            if (idx >= 0) evaluateCandidateCell(mainCellGridPos + getNeighborOffset(idx, (int)isOddRow, params->gridStaggerX), pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, cellBasePitch, aaEdgeWidth, dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, lineAngle, params, &bestStrength, &bestCoverage, &bestDotColor);
         }
     } else {
         // Broad Search: Required for large dots or loose grids
         const int neighborCount = (params->gridStaggerX != 0.0f) ? 6 : 8;
         for (int i = 0; i < neighborCount; i++) {
-            evaluateCandidateCell(mainCellGridPos + getNeighborOffset(i, (int)isOddRow, params->gridStaggerX), pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, aaEdgeWidth, params->dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, params, &bestStrength, &bestCoverage, &bestDotColor, cellBasePitch);
+            evaluateCandidateCell(mainCellGridPos + getNeighborOffset(i, (int)isOddRow, params->gridStaggerX), pixelPos, gridDimensions, geometryBuffer, colorBuffer, contextBuffer, cellBasePitch, aaEdgeWidth, dotShape, userDotColor, useOriginalColorFlag, colorReduction, shiftVal, lineAngle, params, &bestStrength, &bestCoverage, &bestDotColor);
         }
     }
 
