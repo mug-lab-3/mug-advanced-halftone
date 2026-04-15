@@ -407,27 +407,43 @@ __KERNEL__ void CellInfoKernel(
     const int srcW = params->srcSize[0];
     const int srcH = params->srcSize[1];
     
-    const float phase = params->jitterPhase;
-    const float phaseBaseF = _floorf(phase);
+    // Unload rendering parameters to local registers
+    const float contrast = params->contrast;
+    const float aspectRatio = params->aspectRatio;
+    const float dotGain = params->dotGain;
+    const float dotCurve = params->dotCurve;
+    const float minDotRadius = params->minDotRadius;
+    const float clipRadius = params->clipRadius;
+    const float jitterPhase = params->jitterPhase;
+    const float positionJitter = params->positionJitter;
+    const float sizeJitter = params->sizeJitter;
+    const float aspectJitter = params->aspectJitter;
+    const float angleJitter = params->angleJitter;
+    const int   invertMode = params->invertMode;
+    const float brightnessCutoff = params->brightnessCutoff;
+    const float gridStaggerX = params->gridStaggerX;
+    const float cellBasePitch = params->cellBasePitch;
+    const float pitchX = params->cellPitchX;
+    const float pitchY = params->cellPitchY;
+
+    const float phaseBaseF = _floorf(jitterPhase);
     const uint b0 = (uint)phaseBaseF;
     const uint b1 = b0 + 1u;
-    const float t = (phase - phaseBaseF) * (phase - phaseBaseF) * _fmaf(-2.0f, (phase - phaseBaseF), 3.0f);
+    const float t = (jitterPhase - phaseBaseF) * (jitterPhase - phaseBaseF) * _fmaf(-2.0f, (jitterPhase - phaseBaseF), 3.0f);
 
     // Composite animated random fields (PositionX, PositionY, SizeVar, AspectVar)
     const float4 rnd = interpolateHash4(ux, uy, b0, b1, t, 0u, 10007u, 9973u, 2191590403u);
-    const float aspectMultiplier = _exp2f(params->aspectJitter * rnd.w * 2.0f);
-    const float finalAspect = _fmaxf(0.01f, params->aspectRatio * aspectMultiplier);
+    const float aspectMultiplier = _exp2f(aspectJitter * rnd.w * 2.0f);
+    const float finalAspect = _fmaxf(0.01f, aspectRatio * aspectMultiplier);
     
     // Grid alignment and Cell spacing calculations
-    const float pitchX = params->cellPitchX;
-    const float pitchY = params->cellPitchY;
     const float halfX  = pitchX * 0.5f;
     const float halfY  = pitchY * 0.5f;
-    const float rowOff = (float)(uy & 1u) * (-halfX * params->gridStaggerX);
+    const float rowOff = (float)(uy & 1u) * (-halfX * gridStaggerX);
 
     // Compute final center in pixels with position jitter
-    const float cellCX = _fmaf((float)x, pitchX, halfX + rowOff + (rnd.x * params->positionJitter * halfX));
-    const float cellCY = _fmaf((float)y, pitchY, (rnd.y * params->positionJitter * halfY));
+    const float cellCX = _fmaf((float)x, pitchX, halfX + rowOff + (rnd.x * positionJitter * halfX));
+    const float cellCY = _fmaf((float)y, pitchY, (rnd.y * positionJitter * halfY));
 
     // -------------------------------------------------------------------------
     // -- Step 2: Adaptive Area Sampling (Elliptical Area)
@@ -480,8 +496,7 @@ __KERNEL__ void CellInfoKernel(
     const float  avgLuma  = _fmaf(avgColor.x, LUMA_R, _fmaf(avgColor.y, LUMA_G, avgColor.z * LUMA_B));
     
     // Contrast Adjustment
-    const float contrastLuma = _saturatef(_fmaf(avgLuma - 0.5f, params->contrast, 0.5f));
-    const int invertMode = params->invertMode;
+    const float contrastLuma = _saturatef(_fmaf(avgLuma - 0.5f, contrast, 0.5f));
     
     // Growth Determination (Invert, Gain, Curve)
     float tonalValue = (invertMode != 0) ? contrastLuma : (1.0f - contrastLuma);
@@ -489,30 +504,30 @@ __KERNEL__ void CellInfoKernel(
     // Alpha Weighting: Suppress dots in transparent areas to avoid edge artifacts
     tonalValue *= avgColor.w;
     
-    tonalValue = _saturatef(tonalValue + params->dotGain);
-    if (params->dotCurve != 1.0f) {
-        tonalValue = _powf(_saturatef(tonalValue), _fmaxf(params->dotCurve, 1e-4f));
+    tonalValue = _saturatef(tonalValue + dotGain);
+    if (dotCurve != 1.0f) {
+        tonalValue = _powf(_saturatef(tonalValue), _fmaxf(dotCurve, 1e-4f));
     }
     
     // Scale jitter for individual flavor
-    tonalValue = _saturatef(tonalValue * (1.0f + (rnd.z * params->sizeJitter * 0.5f)));
+    tonalValue = _saturatef(tonalValue * (1.0f + (rnd.z * sizeJitter * 0.5f)));
 
     // Visibility Cutoff Logic
     const int passesBrightness = (invertMode != 0)
-        ? (contrastLuma >= params->brightnessCutoff ? 1 : 0)
-        : (contrastLuma <= params->brightnessCutoff ? 1 : 0);
+        ? (contrastLuma >= brightnessCutoff ? 1 : 0)
+        : (contrastLuma <= brightnessCutoff ? 1 : 0);
 
     float dotRadius = 0.0f;
-    const float maxRadius = (params->cellBasePitch * 0.5f) * 1.5f;
-    if (passesBrightness && tonalValue > params->minDotRadius) {
-        dotRadius = _clampf(tonalValue * maxRadius, 0.0f, maxRadius * params->clipRadius);
+    const float maxRadius = (cellBasePitch * 0.5f) * 1.5f;
+    if (passesBrightness && tonalValue > minDotRadius) {
+        dotRadius = _clampf(tonalValue * maxRadius, 0.0f, maxRadius * clipRadius);
     }
 
     // -------------------------------------------------------------------------
     // -- Step 4: Buffer Output
     // -------------------------------------------------------------------------
     const float randAngle = interpolateHash(ux, uy, b0, b1, t, 314159265u);
-    const float finalAngle = randAngle * params->angleJitter * 90.0f;
+    const float finalAngle = randAngle * angleJitter * 90.0f;
     const float cosA = _cospif(finalAngle * (1.0f / 180.0f));
     const float sinA = _sinpif(finalAngle * (1.0f / 180.0f));
 
