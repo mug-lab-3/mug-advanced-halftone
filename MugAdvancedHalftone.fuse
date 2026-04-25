@@ -321,6 +321,13 @@ __DEVICE__ float4 interpolateHash4(uint x, uint y, uint b0, uint b1, float t, ui
     return _mix(r0, r1, t);
 }
 
+// -- Animated Hash Interpolation (float2 variant for reduced register pressure)
+__DEVICE__ float2 interpolateHash2(uint x, uint y, uint b0, uint b1, float t, uint s1, uint s2) {
+    float2 r0 = to_float2(hash3D(x, y, b0, s1), hash3D(x, y, b0, s2));
+    float2 r1 = to_float2(hash3D(x, y, b1, s1), hash3D(x, y, b1, s2));
+    return _mix(r0, r1, t);
+}
+
 // -- Animated Hash Interpolation (Scalar variant)
 __DEVICE__ float interpolateHash(uint x, uint y, uint b0, uint b1, float t, uint s) {
     return _mix(hash3D(x, y, b0, s), hash3D(x, y, b1, s), t);
@@ -751,20 +758,20 @@ __DEVICE__ void calculateRadialShift(
 }
 
 // Helper: Reconstructs cell center on-the-fly
-__DEVICE__ float2 getCellCenter(int cx, int cy, float pitchX, float pitchY, float gridStaggerX, float jitterPhase, float positionJitter, float4 rnd) {
+__DEVICE__ float2 getCellCenter(int cx, int cy, float pitchX, float pitchY, float gridStaggerX, float positionJitter, float2 rnd) {
     const float halfX = pitchX * 0.5f;
     const float halfY = pitchY * 0.5f;
     const float rowOff = (float)(cy & 1u) * (-halfX * gridStaggerX);
     return to_float2(_fmaf((float)cx, pitchX, halfX + rowOff + (rnd.x * positionJitter * halfX)), _fmaf((float)cy, pitchY, (rnd.y * positionJitter * halfY)));
 }
 
-// Helper: Reconstructs random values for a cell
-__DEVICE__ float4 getCellRnd(int cx, int cy, float jitterPhase) {
+// Helper: Reconstructs random values for a cell (Optimized to 2 elements)
+__DEVICE__ float2 getCellRnd2(int cx, int cy, float jitterPhase) {
     const float phaseBaseF = _floorf(jitterPhase);
     const uint b0 = (uint)phaseBaseF;
     const uint b1 = b0 + 1u;
     const float t = (jitterPhase - phaseBaseF) * (jitterPhase - phaseBaseF) * _fmaf(-2.0f, (jitterPhase - phaseBaseF), 3.0f);
-    return interpolateHash4((uint)cx, (uint)cy, b0, b1, t, 0u, 10007u, 9973u, 2191590403u);
+    return interpolateHash2((uint)cx, (uint)cy, b0, b1, t, 0u, 10007u);
 }
 
 __KERNEL__ void RenderDotsKernel(
@@ -860,10 +867,19 @@ __KERNEL__ void RenderDotsKernel(
         const float2 uv = (curGridPos + to_float2(0.5f, 0.5f)) * invGrid;
         
         // Safety: Out-of-bounds UVs are handled automatically by Hardware CLAMP + zero-radius margin cells.
-        const float4 rnd = getCellRnd((int)curGridPos.x, (int)curGridPos.y, jitterPhase);
-        const float2 cellPos = getCellCenter((int)curGridPos.x, (int)curGridPos.y, pitchX, pitchY, gridStaggerX, jitterPhase, positionJitter, rnd);
-
         const float4 geoData = _tex2DVec4(geometryBuffer, uv.x, uv.y);
+        
+        // Skipping calculation for empty backgrounds saves massive ALU/Register pressure
+        if (geoData.x <= 0.0f) continue;
+        if (geoData.x <= DOT_RADIUS_THRESHOLD && aaEdgeWidth <= 0.0f) continue;
+
+        float2 rnd = to_float2(0.0f, 0.0f);
+        if (positionJitter > 0.0f) {
+            rnd = getCellRnd2((int)curGridPos.x, (int)curGridPos.y, jitterPhase);
+        }
+        
+        const float2 cellPos = getCellCenter((int)curGridPos.x, (int)curGridPos.y, pitchX, pitchY, gridStaggerX, positionJitter, rnd);
+
         const float coverage = checkCellDot(geoData, cellPos, pixelPos, aaEdgeWidth, dotShape, cellBasePitch, hatchNX, hatchNY);
         
         if (coverage > 0.0f) {
