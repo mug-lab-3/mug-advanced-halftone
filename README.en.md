@@ -130,6 +130,11 @@ See the [LICENSE](./LICENSE) file for details.
  
 ## 📜 Changelog
 
+### v3.01 (2026/04/25)
+- **Performance Optimization**: Optimized GPU computation and memory management to improve overall performance.
+- **Parameter Consolidation**: Unified redundant parameters like "Brightness Cutoff" into "Min Dot Radius" to simplify the UI.
+- **UI Improvement**: Updated the "About" section text to be simpler and clearer.
+
 ### v2.34 (2026/04/13)
 - **Mac Support**: Resolved an issue where the effect failed to build or render correctly on Mac.
 - **Internal Refactoring**: Optimized data structures and memory management within the GPU kernel to ensure stability across a wider range of hardware.
