@@ -1002,7 +1002,7 @@ function Create()
         INPS_StatusText = "Select the shape of the halftone dots",
     })
 
-    InStaggerDots = self:AddInput("Staggered Grid", "StaggerSquareDots", {
+    InStaggerGrid = self:AddInput("Staggered Grid", "StaggerSquareDots", {
         LINKID_DataType = "Number",
         INPID_InputControl = "CheckboxControl",
         INP_Default = 1.0,
@@ -1212,7 +1212,7 @@ function Create()
     })
     self:EndControlNest()
 
-    self:BeginControlNest("Paper & Background", "Paper", true);
+    self:BeginControlNest("Background Color", "Paper", true);
 
     InBlendWithInput = self:AddInput("Blend With Input", "BlendWithInput", {
         LINKID_DataType = "Number",
@@ -1389,7 +1389,7 @@ function Process(req)
     local colorReduction = floor(InColorReduction:GetValue(req).Value + 0.5)
     local blendWithInput = InBlendWithInput:GetValue(req).Value > 0.5 and 1 or 0
     local dotShape = floor(InDotShape:GetValue(req).Value + 0.5)
-    local staggerDots = InStaggerDots:GetValue(req).Value > 0.5
+    local staggerGrid = InStaggerGrid:GetValue(req).Value > 0.5
     local marginX = InMarginX:GetValue(req).Value
     local marginY = InMarginY:GetValue(req).Value
 
@@ -1412,8 +1412,8 @@ function Process(req)
     local gridStaggerX = 1.0
     if dotShape <= 2 then
         -- Circle, Square, Diamond support both orthogonal and staggered grids
-        gridSpacingY = staggerDots and SIN60 or 1.0
-        gridStaggerX = staggerDots and 1.0 or 0.0
+        gridSpacingY = staggerGrid and SIN60 or 1.0
+        gridStaggerX = staggerGrid and 1.0 or 0.0
     end
 
     local cellBasePitch = floor(max(3.0, width / screenDensity))
@@ -1597,9 +1597,9 @@ function NotifyChanged(inp, param, time)
     if inp == InDotShape then
         local shape = math.floor(param.Value + 0.5)
         if shape <= 2 then
-            InStaggerDots:SetAttrs({IC_Visible = true})
+            InStaggerGrid:SetAttrs({IC_Visible = true})
         else
-            InStaggerDots:SetAttrs({IC_Visible = false})
+            InStaggerGrid:SetAttrs({IC_Visible = false})
         end
 
         if shape == 3 or shape == 4 then
