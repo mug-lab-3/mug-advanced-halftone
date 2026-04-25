@@ -197,7 +197,7 @@
 					Name = "Dot Color",
 					ControlGroup = 2,
 					Page = "Controls",
-					Default = 0.0627,
+					Default = 0.047,
 				},
 				Input30 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
@@ -205,7 +205,7 @@
 					Name = "Color",
 					ControlGroup = 2,
 					Page = "Controls",
-					Default = 0.0156,
+					Default = 0.047,
 				},
 				Input31 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
@@ -213,7 +213,7 @@
 					Name = "Color",
 					ControlGroup = 2,
 					Page = "Controls",
-					Default = 0,
+					Default = 0.047,
 				},
 				Input32 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
@@ -249,7 +249,7 @@
 					Name = "Color",
 					ControlGroup = 3,
 					Page = "Controls",
-					Default = 0.85,
+					Default = 0.941,
 				},
 				Input37 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
@@ -257,7 +257,7 @@
 					Name = "Color",
 					ControlGroup = 3,
 					Page = "Controls",
-					Default = 0.75,
+					Default = 0.941,
 				},
 				Input38 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",
@@ -265,7 +265,7 @@
 					Name = "Color",
 					ControlGroup = 3,
 					Page = "Controls",
-					Default = 0.58,
+					Default = 0.941,
 				},
 				Input39 = InstanceInput {
 					SourceOp = "MugAdvancedHalftone1",

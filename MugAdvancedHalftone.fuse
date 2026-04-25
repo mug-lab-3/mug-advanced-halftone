@@ -31,7 +31,7 @@ created using this Fuse. Feel free to use it for both commercial and non-commerc
 ShowCellInfo = false
 
 -- Set version globally for easy maintenance
-VERSION = 3.01
+VERSION = 3.02
 
 --******************************************************************************************************
 FuRegisterClass("MugAdvancedHalftone", CT_Tool, {
@@ -1164,7 +1164,7 @@ function Create()
         INPID_InputControl = "ColorControl",
         INP_MinScale       = 0.0,
         INP_MaxScale       = 1.0,
-        INP_Default        = 0.0627,
+        INP_Default        = 0.047,
         ICS_Name           = "Color",
         CLRC_ShowWheel     = false,
         IC_ControlGroup    = groupID,
@@ -1177,7 +1177,7 @@ function Create()
         INPID_InputControl = "ColorControl",
         INP_MinScale       = 0.0,
         INP_MaxScale       = 1.0,
-        INP_Default        = 0.0156,
+        INP_Default        = 0.047,
         ICS_Name           = "Color",
         CLRC_ShowWheel     = false,
         IC_ControlGroup    = groupID,
@@ -1190,7 +1190,7 @@ function Create()
         INPID_InputControl = "ColorControl",
         INP_MinScale       = 0.0,
         INP_MaxScale       = 1.0,
-        INP_Default        = 0.0,
+        INP_Default        = 0.047,
         ICS_Name           = "Color",
         CLRC_ShowWheel     = false,
         IC_ControlGroup    = groupID,
@@ -1252,7 +1252,7 @@ function Create()
         INPID_InputControl = "ColorControl",
         INP_MinScale       = 0.0,
         INP_MaxScale       = 1.0,
-        INP_Default        = 0.85,
+        INP_Default        = 0.941,
         ICS_Name           = "Color",
         CLRC_ShowWheel     = false,
         IC_ControlGroup    = groupID,
@@ -1265,7 +1265,7 @@ function Create()
         INPID_InputControl = "ColorControl",
         INP_MinScale       = 0.0,
         INP_MaxScale       = 1.0,
-        INP_Default        = 0.75,
+        INP_Default        = 0.941,
         ICS_Name           = "Color",
         CLRC_ShowWheel     = false,
         IC_ControlGroup    = groupID,
@@ -1278,7 +1278,7 @@ function Create()
         INPID_InputControl = "ColorControl",
         INP_MinScale       = 0.0,
         INP_MaxScale       = 1.0,
-        INP_Default        = 0.58,
+        INP_Default        = 0.941,
         ICS_Name           = "Color",
         CLRC_ShowWheel     = false,
         IC_ControlGroup    = groupID,
