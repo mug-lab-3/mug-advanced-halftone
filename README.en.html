@@ -1,5 +1,5 @@
 <!DOCTYPE html><html><head>
-      <title>README</title>
+      <title>README.en</title>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       
@@ -201,7 +201,7 @@ body {
       <div class="crossnote markdown-preview  ">
       
 <p align="right">
-  日本語 | <a href="README.en.md">English</a>
+  <a href="README.md">日本語</a> | English
 </p>
 <h1 id="-mug-advanced-halftone">🎨 Mug Advanced Halftone </h1>
 <p align="left">
@@ -210,59 +210,59 @@ body {
 <p align="center">
   <img src="images/sample.jpg" alt="MugAdvancedHalftone sample" width="600">
 </p>
-<h2 id="-概要">📝 概要 </h2>
-<p><code>MugAdvancedHalftone</code> は、DaVinci Resolve / Fusion 向けのハーフトーン生成プラグインです<br>
-網点、コミック風、ドット絵、レトロPC、サーマルカメラなどの質感をシミュレートします</p>
-<h3 id="-主な機能">✨ 主な機能 </h3>
+<h2 id="-overview">📝 Overview </h2>
+<p><code>MugAdvancedHalftone</code> is a halftone generation plugin for DaVinci Resolve / Fusion.<br>
+It simulates textures such as classic halftone dots, comic book styles, pixel art, retro PC graphics, and thermal camera visuals.</p>
+<h3 id="-key-features">✨ Key Features </h3>
 <ul>
-<li><strong>グリッド</strong>: 六角形（ハニカム）配置による自然な網点</li>
-<li><strong>ドット形状</strong>: 円形、四角形、ひし形、線、クロスハッチ</li>
-<li><strong>揺らぎ（Jitter）</strong>: 位置・サイズ・縦横比・アングルの個別のランダム化</li>
-<li><strong>カラー</strong>: 16色パレット等の制限、版ズレ（RGB Shift）の再現</li>
-<li><strong>描画制御</strong>: アンチエイリアス、輝度反転、ドットゲイン調整</li>
+<li><strong>Grid</strong>: Natural halftone patterns with hexagonal (honeycomb) placement.</li>
+<li><strong>Dot Shapes</strong>: Circle, Square, Diamond, Line, and Crosshatch.</li>
+<li><strong>Jitter</strong>: Individual randomization for Position, Size, Aspect Ratio, and Angle.</li>
+<li><strong>Color</strong>: Palette limitations (e.g., 16 colors) and reproduction of RGB Shift (misregistration).</li>
+<li><strong>Drawing Control</strong>: Antialiasing, Invert Brightness, and Dot Gain adjustments.</li>
 </ul>
 <hr>
-<h2 id="-インストール">📦 インストール </h2>
-<p>本エフェクトを使用するには、以下のファイルをOSごとの所定フォルダに配置してください</p>
+<h2 id="-installation">📦 Installation </h2>
+<p>To use this effect, place the following files in the specified folders for your OS.</p>
 <table>
 <thead>
 <tr>
-<th style="text-align:left">ファイル</th>
-<th style="text-align:center">必須</th>
-<th style="text-align:left">用途</th>
-<th style="text-align:left">配置先フォルダ</th>
+<th style="text-align:left">File</th>
+<th style="text-align:center">Required</th>
+<th style="text-align:left">Purpose</th>
+<th style="text-align:left">Destination Folder</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td style="text-align:left"><a href="https://github.com/mug-lab-3/mug-advanced-halftone/releases/latest/download/MugAdvancedHalftone.fuse"><strong>MugAdvancedHalftone.fuse</strong></a></td>
-<td style="text-align:center"><strong>必須</strong></td>
-<td style="text-align:left">プラグイン本体 (Fusion用)</td>
+<td style="text-align:center"><strong>Required</strong></td>
+<td style="text-align:left">Plugin core (for Fusion)</td>
 <td style="text-align:left"><code>Fuses</code></td>
 </tr>
 <tr>
 <td style="text-align:left"><a href="https://github.com/mug-lab-3/mug-advanced-halftone/releases/latest/download/MugAdvancedHalftone.setting"><strong>MugAdvancedHalftone.setting</strong></a></td>
-<td style="text-align:center"><strong>必須</strong></td>
-<td style="text-align:left">Editページ表示用プリセット</td>
+<td style="text-align:center"><strong>Required</strong></td>
+<td style="text-align:left">Preset for Edit Page</td>
 <td style="text-align:left"><code>Templates/Edit/Effects</code></td>
 </tr>
 <tr>
 <td style="text-align:left"><a href="https://github.com/mug-lab-3/mug-advanced-halftone/releases/latest/download/MugAdvancedHalftone.png"><strong>MugAdvancedHalftone.png</strong></a></td>
-<td style="text-align:center">任意</td>
-<td style="text-align:left">アイコン画像</td>
+<td style="text-align:center">Optional</td>
+<td style="text-align:left">Icon image</td>
 <td style="text-align:left"><code>Templates/Edit/Effects</code></td>
 </tr>
 </tbody>
 </table>
-<h3 id="配置フォルダのパス">配置フォルダのパス </h3>
-<h4 id="-fuses-フォルダ-fuse-を配置">📂 Fuses フォルダ (<code>.fuse</code> を配置) </h4>
+<h3 id="folder-paths">Folder Paths </h3>
+<h4 id="-fuses-folder-place-fuse-here">📂 Fuses Folder (Place <code>.fuse</code> here) </h4>
 <p><strong>Windows</strong></p>
 <pre data-role="codeBlock" data-info="text" class="language-text text"><code>%AppData%\Blackmagic Design\DaVinci Resolve\Support\Fusion\Fuses\
 </code></pre><p><strong>macOS</strong></p>
 <pre data-role="codeBlock" data-info="text" class="language-text text"><code>~/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Fuses/
 </code></pre><p><strong>Linux</strong></p>
 <pre data-role="codeBlock" data-info="text" class="language-text text"><code>~/.local/share/BlackmagicDesign/DaVinciResolve/Fusion/Fuses/
-</code></pre><h4 id="-templatesediteffects-フォルダ-setting-と-png-を配置">📂 Templates/Edit/Effects フォルダ (<code>.setting</code> と <code>.png</code> を配置) </h4>
+</code></pre><h4 id="-templatesediteffects-folder-place-setting-and-png-here">📂 Templates/Edit/Effects Folder (Place <code>.setting</code> and <code>.png</code> here) </h4>
 <p><strong>Windows</strong></p>
 <pre data-role="codeBlock" data-info="text" class="language-text text"><code>%AppData%\Blackmagic Design\DaVinci Resolve\Support\Fusion\Templates\Edit\Effects\
 </code></pre><p><strong>macOS</strong></p>
@@ -270,193 +270,195 @@ body {
 </code></pre><p><strong>Linux</strong></p>
 <pre data-role="codeBlock" data-info="text" class="language-text text"><code>~/.local/share/BlackmagicDesign/DaVinciResolve/Fusion/Templates/Edit/Effects/
 </code></pre><hr>
-<h2 id="️-パラメータ">⚙️ パラメータ </h2>
+<h2 id="️-parameters">⚙️ Parameters </h2>
 <details>
-<summary><b>クリックしてパラメータ詳細を表示 / Click to expand Parameter Reference</b></summary>
+<summary><b>Click to expand Parameter Reference</b></summary>
 <table>
 <thead>
 <tr>
-<th style="text-align:left">セクション</th>
-<th style="text-align:left">パラメータ</th>
-<th style="text-align:left">説明</th>
+<th style="text-align:left">Section</th>
+<th style="text-align:left">Parameter</th>
+<th style="text-align:left">Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td style="text-align:left"><strong>Global</strong></td>
 <td style="text-align:left">Screen Density</td>
-<td style="text-align:left">ドットの細かさ</td>
+<td style="text-align:left">Fineness of the dots</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Contrast</td>
-<td style="text-align:left">元画像のコントラスト調整</td>
+<td style="text-align:left">Adjust the contrast of the original image</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Invert Brightness</td>
-<td style="text-align:left">明暗の反転（Subtractive Mode）</td>
+<td style="text-align:left">Inverts light and dark (Subtractive Mode)</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Margin X</td>
-<td style="text-align:left">ドットの横方向の間隔調整</td>
+<td style="text-align:left">Horizontal spacing adjustment</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Margin Y</td>
-<td style="text-align:left">ドットの縦方向の間隔調整</td>
+<td style="text-align:left">Vertical spacing adjustment</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Screen Aspect Ratio</td>
-<td style="text-align:left">スクリーンの縦横比（パターン全体の歪み）</td>
+<td style="text-align:left">Aspect ratio of the screen (global pattern distortion)</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Dot Shape</strong></td>
 <td style="text-align:left">Dot Shape</td>
-<td style="text-align:left">ドットの形状</td>
+<td style="text-align:left">The shape of the dots</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Staggered Grid</td>
-<td style="text-align:left">千鳥配置（オフでストレート配置）</td>
+<td style="text-align:left">Honeycomb arrangement (Straight if Off)</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Line Angle</td>
-<td style="text-align:left">線・網線の角度</td>
+<td style="text-align:left">Angle of lines or halftone screens</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Dot Gain</td>
-<td style="text-align:left">ドットの太り</td>
+<td style="text-align:left">Dot thickening/ink bleed</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Dot Size Curve</td>
-<td style="text-align:left">サイズの成長曲線</td>
+<td style="text-align:left">Growth curve of dot size</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Cutoff Dot Radius</td>
-<td style="text-align:left">描画する最小の半径</td>
+<td style="text-align:left">Minimum radius to be drawn</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Clip Dot Radius</td>
-<td style="text-align:left">最大サイズの制限</td>
+<td style="text-align:left">Maximum size limit</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Enable Antialias</td>
-<td style="text-align:left">境界のぼかし処理</td>
+<td style="text-align:left">Edge smoothing process</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Dot Jitter</strong></td>
 <td style="text-align:left">Jitter Noise Phase</td>
-<td style="text-align:left">アニメーションの位相</td>
+<td style="text-align:left">Animation phase</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Position Jitter</td>
-<td style="text-align:left">位置のランダムなズレ</td>
+<td style="text-align:left">Random positional offset</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Size Jitter</td>
-<td style="text-align:left">サイズのランダムなムラ</td>
+<td style="text-align:left">Random size variation</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Aspect Jitter</td>
-<td style="text-align:left">縦横比のランダムな歪み</td>
+<td style="text-align:left">Random aspect ratio distortion</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Angle Jitter</td>
-<td style="text-align:left">角度のランダムな回転</td>
+<td style="text-align:left">Random rotation</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Dot Color</strong></td>
 <td style="text-align:left">Use Original Color</td>
-<td style="text-align:left">元画像の色をドットに使用</td>
+<td style="text-align:left">Use the colors from the original image for dots</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Color Reduction</td>
-<td style="text-align:left">カラーパレットの制限</td>
+<td style="text-align:left">Limit the color palette</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">RGB Shift</td>
-<td style="text-align:left">版ズレ・色収差の強さ</td>
+<td style="text-align:left">Strength of misregistration/chromatic aberration</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Dot Color</td>
-<td style="text-align:left">指定色の設定</td>
+<td style="text-align:left">Custom dot color setting</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Background</strong></td>
 <td style="text-align:left">Blend With Input</td>
-<td style="text-align:left">元の画像に直接合成</td>
+<td style="text-align:left">Composite directly onto the original image</td>
 </tr>
 <tr>
 <td style="text-align:left"></td>
 <td style="text-align:left">Paper Color</td>
-<td style="text-align:left">背景色（紙の色）</td>
+<td style="text-align:left">Background color (Paper color)</td>
 </tr>
 </tbody>
 </table>
 </details>
 <hr>
-<h2 id="️-ライセンス">⚖️ ライセンス </h2>
-<p>本プロジェクトは <strong>MITライセンス</strong> のもとで公開されています<br>
-詳細は <a href="./LICENSE">LICENSE</a> ファイルをご確認ください</p>
+<h2 id="️-license">⚖️ License </h2>
+<p>This project is released under the <strong>MIT License</strong>.<br>
+See the <a href="./LICENSE">LICENSE</a> file for details.</p>
 <div class="callout" data-callout="note">
 <div class="callout-title">Note</div>
-<p><strong>映像制作者の方へ / Note for Video Creators:</strong><br>
-本ソフトウェアを使用して制作された映像作品（ビデオコンテンツ）において、著作権表示やクレジットの記載は任意であり、必須ではありません。商用・非商用問わず、自由にお使いください！<br>
-You do NOT need to include copyright notices or credits in your video works (rendered outputs) created using this Fuse. Feel free to use it for both commercial and non-commercial projects!</p>
+<p><strong>Note for Video Creators:</strong><br>
+Including copyright notices or credits in your video works (rendered outputs) created using this Fuse is optional and NOT required. Feel free to use it for both commercial and non-commercial projects!</p>
 </div>
-<h3 id="-やっていいことok">✅ やっていいこと（OK） </h3>
+<h3 id="-permissions-ok">✅ Permissions (OK) </h3>
 <ul>
-<li><strong>商用利用</strong>: Youtube動画や広告、映画などの制作に自由に使用できます</li>
-<li><strong>改変</strong>: Fuseファイルの中身を書き換えて自分好みに調整できます</li>
-<li><strong>再配布</strong>: 規約を守れば、自分のサイトなどで紹介・配布できます（ただし、著作権表示が必要です）</li>
+<li><strong>Commercial Use</strong>: Use it freely for YouTube videos, advertisements, films, etc.</li>
+<li><strong>Modification</strong>: You can modify the Fuse file contents for personal adjustment.</li>
+<li><strong>Redistribution</strong>: You can introduce and distribute it on your site as long as you comply with the terms (requires copyright notice).</li>
 </ul>
-<h3 id="-やってはいけないことng">❌ やってはいけないこと（NG） </h3>
+<h3 id="-restrictions-ng">❌ Restrictions (NG) </h3>
 <ul>
-<li><strong>無保証</strong>: このプラグインの使用によって生じたいかなる損害についても、作者は責任を負いません</li>
-<li><strong>著作権表示の削除</strong>: ソースコード内にある作者名やライセンス条項を消してはいけません</li>
+<li><strong>No Warranty</strong>: The author assumes no responsibility for any damage caused by using this plugin.</li>
+<li><strong>Copyright Removal</strong>: You must not remove the author's name or license terms from the source code.</li>
 </ul>
 <hr>
-<h2 id="-更新履歴">📜 更新履歴 </h2>
+<h2 id="-changelog">📜 Changelog </h2>
 <h3 id="v234-20260413">v2.34 (2026/04/13) </h3>
 <ul>
-<li><strong>Mac環境への対応</strong>: Macにおいてエフェクトが正常にビルド・表示されない問題を修正しました。</li>
-<li><strong>内部処理のリファクタリング</strong>: GPUカーネル内のデータ構造とメモリ管理を整理し、より幅広いハードウェア環境での安定性を確保しました。</li>
-<li><strong>バージョン管理の改善</strong>: 内部バージョン情報の保持形式を最適化し、外部パッケージ管理ツールとの互換性を向上させました。</li>
+<li><strong>Mac Support</strong>: Resolved an issue where the effect failed to build or render correctly on Mac.</li>
+<li><strong>Internal Refactoring</strong>: Optimized data structures and memory management within the GPU kernel to ensure stability across a wider range of hardware.</li>
+<li><strong>Improved Version Management</strong>: Optimized internal versioning for better compatibility with ecosystem tools.</li>
 </ul>
 <h3 id="v233-20260406">v2.33 (2026/04/06) </h3>
 <ul>
-<li><strong>縁（エッジ）の描画安定化</strong>: 画像の端や、透過背景上の文字の周りに不自然なドット（縁取り）が出る現象を修正しました。</li>
-<li><strong>サンプリング精度の向上</strong>: より正確に画素の色を拾うように内部処理を改善し、端部まで安定した描画が行われるようになりました。</li>
+<li><strong>Edge Rendering Improvements</strong>: Fixed an issue where unnatural dots (outlining) appeared at image edges or around text on transparent backgrounds.</li>
+<li><strong>Improved Sampling Accuracy</strong>: Enhanced internal processing to sample pixel colors more accurately, resulting in stable rendering up to the edges.</li>
 </ul>
 <h3 id="v230-20260405">v2.30 (2026/04/05) </h3>
 <ul>
-<li><strong>UI構成の再編</strong>: <code>AspectRatio</code> パラメータを <code>Dot Shape</code> から <code>Global</code> セクションへ移動し、<code>Screen Aspect Ratio</code> に改名しました。これにより、スクリーン全体の密度バランスとしてのアスペクト比調整がより直感的になりました。</li>
+<li><strong>UI Reorganization</strong>: Moved the <code>AspectRatio</code> parameter from "Dot Shape" to "Global" and renamed it to <code>Screen Aspect Ratio</code> for a more intuitive density balance adjustment.</li>
 </ul>
 <h3 id="v221-20260405">v2.21 (2026/04/05) </h3>
 <ul>
-<li><strong>パフォーマンス最適化</strong>: GPUカーネルの分岐を排除（<code>_mix</code>活用）し、数学演算（<code>_fmaf</code>等）を組み込み関数へ置き換えることで実行効率を向上。</li>
-<li><strong>保守性向上</strong>: 各カーネルを論理的なステップ（Step 1〜4）に構造化し、コメントによる解説を拡充しました。</li>
-<li><strong>安定性改修</strong>: ホスト側(Fuse)との互換性を確保しつつ、内部演算をベクトル化する最適なバランスへ調整しました。</li>
+<li><strong>Performance Optimization</strong>: Eliminated branching in GPU kernels and replaced math operations with built-in functions for better efficiency.</li>
+<li><strong>Maintenance Improvement</strong>: Structured kernels into logical steps and added extensive comments.</li>
+<li><strong>Stability Fixes</strong>: Balanced vectorization to ensure compatibility with the host (Fusion).</li>
 </ul>
 <h3 id="v210-20260402">v2.10 (2026/04/02) </h3>
+<ul>
+<li>Added Staggered Grid support for Circular and Diamond dots.</li>
+</ul>
 <hr>
-<h2 id="-リンク">🔗 リンク </h2>
+<h2 id="-links">🔗 Links </h2>
 <ul>
 <li><a href="https://www.youtube.com/@MugLab3"><img src="https://cdn.simpleicons.org/youtube" width="16" height="16"> <strong>YouTube: Mug Lab</strong></a></li>
 <li><a href="https://github.com/mug-lab-3/mug-advanced-halftone"><picture><source media="(prefers-color-scheme: dark)" srcset="https://cdn.simpleicons.org/github/white"><img src="https://cdn.simpleicons.org/github/black" width="16" height="16"></picture> <strong>GitHub: Mug Advanced Halftone</strong></a></li>

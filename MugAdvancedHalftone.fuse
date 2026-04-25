@@ -1327,24 +1327,11 @@ function Create()
         TEC_ReadOnly = true,
         INPS_DefaultText = [[
 Mug Advanced Halftone v]] .. tostring(VERSION) .. [[
---------------------------------------------------
-A high-performance halftone simulation Fuse for DaVinci Resolve.
-
-[Key Features]
-- Orthogonal & Hexagonal Grid (Circle, Square, Diamond)
-- Dot Spacing (Margin) Adjustment
-- Global Pattern Line Hatching & Crosshatching
-- Professional Engraving Shadow Logic
-- Analog Jitter (Position, Size, Aspect)
-- Retro Hardware Color Themes & RGB Channel Shift
-- Fully GPU Accelerated (OpenCL/Metal/CUDA)
-
-[Updates & Support]
-- GitHub: https://github.com/mug-lab-3/mug-advanced-halftone
-- X: https://x.com/MugLab3
-- YouTube: https://www.youtube.com/@MugLab3
 
 Developed by Mug Lab.
+Released under the MIT License.
+Latest version available on GitHub:
+https://github.com/mug-lab-3/mug-advanced-halftone
 ]],
     })
 end
