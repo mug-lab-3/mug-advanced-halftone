@@ -36,6 +36,14 @@ To use this effect, place the following files in the specified folders for your 
 
 ### Folder Paths
 
+> [!NOTE]
+> By default, the destination folders such as `Fuses` or `Templates/Edit/Effects` might not exist. If you don't see them, please create the folders manually and place the files inside.
+
+> [!TIP]
+> **Easy Access Tips**
+> - **Windows**: Simply paste the path above into the File Explorer's address bar and press `Enter` to jump directly to the folder.
+> - **Mac**: The `Library` folder is hidden by default. To easily navigate to it, open Finder, press `Cmd + Shift + G` (Go to Folder), paste the path, and press `Enter`.
+
 #### 📂 Fuses Folder (Place `.fuse` here)
 
 **Windows**

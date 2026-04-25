@@ -255,6 +255,18 @@ body {
 </tbody>
 </table>
 <h3 id="配置フォルダのパス">配置フォルダのパス </h3>
+<div class="callout" data-callout="note">
+<div class="callout-title">Note</div>
+<p>初期状態では、配置先となる <code>Fuses</code> や <code>Templates/Edit/Effects</code> などのフォルダ自体が存在しない場合があります。その場合は、手動で新しいフォルダを作成してファイルを配置してください</p>
+</div>
+<div class="callout" data-callout="tip">
+<div class="callout-title">Tip</div>
+<p><strong>各OSでの簡単なアクセス方法</strong></p>
+<ul>
+<li><strong>Windows</strong>: エクスプローラーのアドレスバーに上記のパスをコピペして <code>Enter</code> を押すだけで移動できます。</li>
+<li><strong>Mac</strong>: <code>Library</code> フォルダが隠しフォルダになっているため普通に探すと見つかりません。Finderで <code>Cmd + Shift + G</code> を押し、「フォルダの場所を入力」画面にコピペして移動するのが一番簡単です。</li>
+</ul>
+</div>
 <h4 id="-fuses-フォルダ-fuse-を配置">📂 Fuses フォルダ (<code>.fuse</code> を配置) </h4>
 <p><strong>Windows</strong></p>
 <pre data-role="codeBlock" data-info="text" class="language-text text"><code>%AppData%\Blackmagic Design\DaVinci Resolve\Support\Fusion\Fuses\
@@ -433,6 +445,12 @@ You do NOT need to include copyright notices or credits in your video works (ren
 </ul>
 <hr>
 <h2 id="-更新履歴">📜 更新履歴 </h2>
+<h3 id="v301-20260425">v3.01 (2026/04/25) </h3>
+<ul>
+<li><strong>パフォーマンス最適化</strong>: GPU演算とメモリ管理を最適化し、パフォーマンスを向上させました。</li>
+<li><strong>パラメータの整理</strong>: 重複していた「Brightness Cutoff」等の機能を「Min Dot Radius」に統合し、パラメータをシンプルにしました。</li>
+<li><strong>UIの改善</strong>: 「About」セクションの情報を整理し、見やすく更新しました。</li>
+</ul>
 <h3 id="v234-20260413">v2.34 (2026/04/13) </h3>
 <ul>
 <li><strong>Mac環境への対応</strong>: Macにおいてエフェクトが正常にビルド・表示されない問題を修正しました。</li>
