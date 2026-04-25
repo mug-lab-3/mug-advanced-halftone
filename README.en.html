@@ -1,496 +1,1632 @@
-<!DOCTYPE html><html><head>
-      <title>README.en</title>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.45/dist/katex.min.css">
-      
-      
-      
-      
-      
-      
-      
-      <style>
-      code[class*=language-],pre[class*=language-]{color:#333;background:0 0;font-family:Consolas,"Liberation Mono",Menlo,Courier,monospace;text-align:left;white-space:pre;word-spacing:normal;word-break:normal;word-wrap:normal;line-height:1.4;-moz-tab-size:8;-o-tab-size:8;tab-size:8;-webkit-hyphens:none;-moz-hyphens:none;-ms-hyphens:none;hyphens:none}pre[class*=language-]{padding:.8em;overflow:auto;border-radius:3px;background:#f5f5f5}:not(pre)>code[class*=language-]{padding:.1em;border-radius:.3em;white-space:normal;background:#f5f5f5}.token.blockquote,.token.comment{color:#969896}.token.cdata{color:#183691}.token.doctype,.token.macro.property,.token.punctuation,.token.variable{color:#333}.token.builtin,.token.important,.token.keyword,.token.operator,.token.rule{color:#a71d5d}.token.attr-value,.token.regex,.token.string,.token.url{color:#183691}.token.atrule,.token.boolean,.token.code,.token.command,.token.constant,.token.entity,.token.number,.token.property,.token.symbol{color:#0086b3}.token.prolog,.token.selector,.token.tag{color:#63a35c}.token.attr-name,.token.class,.token.class-name,.token.function,.token.id,.token.namespace,.token.pseudo-class,.token.pseudo-element,.token.url-reference .token.variable{color:#795da3}.token.entity{cursor:help}.token.title,.token.title .token.punctuation{font-weight:700;color:#1d3e81}.token.list{color:#ed6a43}.token.inserted{background-color:#eaffea;color:#55a532}.token.deleted{background-color:#ffecec;color:#bd2c00}.token.bold{font-weight:700}.token.italic{font-style:italic}.language-json .token.property{color:#183691}.language-markup .token.tag .token.punctuation{color:#333}.language-css .token.function,code.language-css{color:#0086b3}.language-yaml .token.atrule{color:#63a35c}code.language-yaml{color:#183691}.language-ruby .token.function{color:#333}.language-markdown .token.url{color:#795da3}.language-makefile .token.symbol{color:#795da3}.language-makefile .token.variable{color:#183691}.language-makefile .token.builtin{color:#0086b3}.language-bash .token.keyword{color:#0086b3}pre[data-line]{position:relative;padding:1em 0 1em 3em}pre[data-line] .line-highlight-wrapper{position:absolute;top:0;left:0;background-color:transparent;display:block;width:100%}pre[data-line] .line-highlight{position:absolute;left:0;right:0;padding:inherit 0;margin-top:1em;background:hsla(24,20%,50%,.08);background:linear-gradient(to right,hsla(24,20%,50%,.1) 70%,hsla(24,20%,50%,0));pointer-events:none;line-height:inherit;white-space:pre}pre[data-line] .line-highlight:before,pre[data-line] .line-highlight[data-end]:after{content:attr(data-start);position:absolute;top:.4em;left:.6em;min-width:1em;padding:0 .5em;background-color:hsla(24,20%,50%,.4);color:#f4f1ef;font:bold 65%/1.5 sans-serif;text-align:center;vertical-align:.3em;border-radius:999px;text-shadow:none;box-shadow:0 1px #fff}pre[data-line] .line-highlight[data-end]:after{content:attr(data-end);top:auto;bottom:.4em}html body{font-family:'Helvetica Neue',Helvetica,'Segoe UI',Arial,freesans,sans-serif;font-size:16px;line-height:1.6;color:#333;background-color:#fff;overflow:initial;box-sizing:border-box;word-wrap:break-word}html body>:first-child{margin-top:0}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{line-height:1.2;margin-top:1em;margin-bottom:16px;color:#000}html body h1{font-size:2.25em;font-weight:300;padding-bottom:.3em}html body h2{font-size:1.75em;font-weight:400;padding-bottom:.3em}html body h3{font-size:1.5em;font-weight:500}html body h4{font-size:1.25em;font-weight:600}html body h5{font-size:1.1em;font-weight:600}html body h6{font-size:1em;font-weight:600}html body h1,html body h2,html body h3,html body h4,html body h5{font-weight:600}html body h5{font-size:1em}html body h6{color:#5c5c5c}html body strong{color:#000}html body del{color:#5c5c5c}html body a:not([href]){color:inherit;text-decoration:none}html body a{color:#08c;text-decoration:none}html body a:hover{color:#00a3f5;text-decoration:none}html body img{max-width:100%}html body>p{margin-top:0;margin-bottom:16px;word-wrap:break-word}html body>ol,html body>ul{margin-bottom:16px}html body ol,html body ul{padding-left:2em}html body ol.no-list,html body ul.no-list{padding:0;list-style-type:none}html body ol ol,html body ol ul,html body ul ol,html body ul ul{margin-top:0;margin-bottom:0}html body li{margin-bottom:0}html body li.task-list-item{list-style:none}html body li>p{margin-top:0;margin-bottom:0}html body .task-list-item-checkbox{margin:0 .2em .25em -1.8em;vertical-align:middle}html body .task-list-item-checkbox:hover{cursor:pointer}html body blockquote{margin:16px 0;font-size:inherit;padding:0 15px;color:#5c5c5c;background-color:#f0f0f0;border-left:4px solid #d6d6d6}html body blockquote>:first-child{margin-top:0}html body blockquote>:last-child{margin-bottom:0}html body hr{height:4px;margin:32px 0;background-color:#d6d6d6;border:0 none}html body table{margin:10px 0 15px 0;border-collapse:collapse;border-spacing:0;display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all}html body table th{font-weight:700;color:#000}html body table td,html body table th{border:1px solid #d6d6d6;padding:6px 13px}html body dl{padding:0}html body dl dt{padding:0;margin-top:16px;font-size:1em;font-style:italic;font-weight:700}html body dl dd{padding:0 16px;margin-bottom:16px}html body code{font-family:Menlo,Monaco,Consolas,'Courier New',monospace;font-size:.85em;color:#000;background-color:#f0f0f0;border-radius:3px;padding:.2em 0}html body code::after,html body code::before{letter-spacing:-.2em;content:'\00a0'}html body pre>code{padding:0;margin:0;word-break:normal;white-space:pre;background:0 0;border:0}html body .highlight{margin-bottom:16px}html body .highlight pre,html body pre{padding:1em;overflow:auto;line-height:1.45;border:#d6d6d6;border-radius:3px}html body .highlight pre{margin-bottom:0;word-break:normal}html body pre code,html body pre tt{display:inline;max-width:initial;padding:0;margin:0;overflow:initial;line-height:inherit;word-wrap:normal;background-color:transparent;border:0}html body pre code:after,html body pre code:before,html body pre tt:after,html body pre tt:before{content:normal}html body blockquote,html body dl,html body ol,html body p,html body pre,html body ul{margin-top:0;margin-bottom:16px}html body kbd{color:#000;border:1px solid #d6d6d6;border-bottom:2px solid #c7c7c7;padding:2px 4px;background-color:#f0f0f0;border-radius:3px}@media print{html body{background-color:#fff}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{color:#000;page-break-after:avoid}html body blockquote{color:#5c5c5c}html body pre{page-break-inside:avoid}html body table{display:table}html body img{display:block;max-width:100%;max-height:100%}html body code,html body pre{word-wrap:break-word;white-space:pre}}.markdown-preview{width:100%;height:100%;box-sizing:border-box}.markdown-preview ul{list-style:disc}.markdown-preview ul ul{list-style:circle}.markdown-preview ul ul ul{list-style:square}.markdown-preview ol{list-style:decimal}.markdown-preview ol ol,.markdown-preview ul ol{list-style-type:lower-roman}.markdown-preview ol ol ol,.markdown-preview ol ul ol,.markdown-preview ul ol ol,.markdown-preview ul ul ol{list-style-type:lower-alpha}.markdown-preview .newpage,.markdown-preview .pagebreak{page-break-before:always}.markdown-preview pre.line-numbers{position:relative;padding-left:3.8em;counter-reset:linenumber}.markdown-preview pre.line-numbers>code{position:relative}.markdown-preview pre.line-numbers .line-numbers-rows{position:absolute;pointer-events:none;top:1em;font-size:100%;left:0;width:3em;letter-spacing:-1px;border-right:1px solid #999;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.markdown-preview pre.line-numbers .line-numbers-rows>span{pointer-events:none;display:block;counter-increment:linenumber}.markdown-preview pre.line-numbers .line-numbers-rows>span:before{content:counter(linenumber);color:#999;display:block;padding-right:.8em;text-align:right}.markdown-preview .mathjax-exps .MathJax_Display{text-align:center!important}.markdown-preview:not([data-for=preview]) .code-chunk .code-chunk-btn-group{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .status{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .output-div{margin-bottom:16px}.markdown-preview .md-toc{padding:0}.markdown-preview .md-toc .md-toc-details{margin:0;padding:0;border:none}.markdown-preview .md-toc summary.md-toc-link-wrapper{cursor:pointer;list-style-position:outside}.markdown-preview .md-toc summary.md-toc-link-wrapper::marker{font-size:.85em}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link div,.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}.markdown-preview .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}.markdown-preview .md-toc .md-toc-link-wrapper[data-level='0']{margin-left:12px}.markdown-preview .md-toc .md-toc-link-wrapper[data-level='1']{margin-left:28px}.markdown-preview .md-toc .md-toc-link-wrapper[data-level='2']{margin-left:44px}.markdown-preview .md-toc .md-toc-link-wrapper[data-level='3']{margin-left:60px}.markdown-preview .md-toc .md-toc-link-wrapper[data-level='4']{margin-left:76px}.markdown-preview .md-toc .md-toc-link-wrapper[data-level='5']{margin-left:80px}.scrollbar-style::-webkit-scrollbar{width:8px}.scrollbar-style::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}.scrollbar-style::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode]){position:relative;width:100%;height:100%;top:0;left:0;margin:0;padding:0;overflow:auto}html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{position:relative;top:0;min-height:100vh}@media screen and (min-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em calc(50% - 457px + 2em)}}@media screen and (max-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{font-size:14px!important;padding:1em}}@media print{html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{display:none}}html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{position:fixed;bottom:8px;left:8px;font-size:28px;cursor:pointer;color:inherit;z-index:99;width:32px;text-align:center;opacity:.4}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] #sidebar-toc-btn{opacity:1}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc{position:fixed;top:0;left:0;width:300px;height:100%;padding:32px 0 48px 0;font-size:14px;box-shadow:0 0 4px rgba(150,150,150,.33);box-sizing:border-box;overflow:auto;background-color:inherit}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar{width:8px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc a{text-decoration:none}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc{padding:0 16px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-details{margin:0;padding:0;border:none}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link div,html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper[data-level='0']{padding-left:0}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper[data-level='1']{padding-left:16px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper[data-level='2']{padding-left:32px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper[data-level='3']{padding-left:48px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper[data-level='4']{padding-left:64px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper[data-level='5']{padding-left:80px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{left:300px;width:calc(100% - 300px);padding:2em calc(50% - 457px - 300px / 2);margin:0;box-sizing:border-box}@media screen and (max-width:1274px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{width:100%}}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .markdown-preview{left:50%;transform:translateX(-50%)}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .md-sidebar-toc{display:none}@font-face{font-family:"Material Icons";font-style:normal;font-weight:400;src:local("Material Icons"),local("MaterialIcons-Regular"),url("data:application/x-font-woff;charset=utf-8;base64,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") format("woff")}.callout{--callout-color:68,138,255;position:relative;overflow:hidden;border-radius:4px;margin:1rem 0;padding:.75rem 1rem;background:rgba(var(--callout-color),.1)}.callout>.callout-title{margin:0 -1.2rem;padding:0 1.2rem 0 3.3rem;font-weight:700;color:rgb(var(--callout-color))}.callout .callout-title::before{position:absolute;left:1.2rem;font-size:1.2rem;font-family:Material Icons;font-style:normal;font-variant:normal;font-weight:400;text-transform:none;white-space:nowrap;word-wrap:normal;direction:ltr;color:rgba(var(--callout-color),.8);content:var(--callout-icon, "i")}.callout>p{margin-block-start:1rem;margin-block-end:1rem;padding-left:.4rem}.callout details.callout-title,.callout summary.callout-title{cursor:pointer;list-style:none}.callout summary.callout-title::-webkit-details-marker{display:none}details.callout>summary.callout-title::after{display:inline-block;width:.45em;height:.45em;margin-left:1em;border-right:2px solid rgb(var(--callout-color));border-bottom:2px solid rgb(var(--callout-color));transform:translateY(-.05em) rotate(-45deg);transition:transform 160ms ease,opacity 160ms ease;opacity:.9;content:""}details.callout[open]>summary.callout-title::after{transform:translateY(-.05em) rotate(45deg);opacity:1}.callout[data-callout=abstract],.callout[data-callout=summary],.callout[data-callout=tldr]{--callout-color:0,191,188;--callout-icon:"\E8D2"}.callout[data-callout=note]{--callout-color:8,109,221;--callout-icon:"\E3C9"}.callout[data-callout=info]{--callout-color:8,109,221;--callout-icon:"\E88E"}.callout[data-callout=todo]{--callout-color:8,109,221;--callout-icon:"\E88E"}.callout[data-callout=hint],.callout[data-callout=important],.callout[data-callout=tip]{--callout-color:0,191,188;--callout-icon:"\E80E"}.callout[data-callout=check],.callout[data-callout=done],.callout[data-callout=success]{--callout-color:8,185,78;--callout-icon:"\E876"}.callout[data-callout=faq],.callout[data-callout=help],.callout[data-callout=question]{--callout-color:236,117,0;--callout-icon:"\E887"}.callout[data-callout=attention],.callout[data-callout=caution],.callout[data-callout=warning]{--callout-color:236,117,0;--callout-icon:"\E002"}.callout[data-callout=fail],.callout[data-callout=failure],.callout[data-callout=missing]{--callout-color:233,49,71;--callout-icon:"\E14C"}.callout[data-callout=danger],.callout[data-callout=error]{--callout-color:233,49,71;--callout-icon:"\E3E7"}.callout[data-callout=bug]{--callout-color:233,49,71;--callout-icon:"\E868"}.callout[data-callout=example]{--callout-color:120,82,238;--callout-icon:"\E242"}.callout[data-callout=cite],.callout[data-callout=quote]{--callout-color:158,158,158;--callout-icon:"\E244"}.callout .callout{margin:.75rem 0}
-/* 
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>README.en</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.45/dist/katex.min.css">
+
+
+
+
+
+
+
+  <style>
+    code[class*=language-],
+    pre[class*=language-] {
+      color: #333;
+      background: 0 0;
+      font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+      text-align: left;
+      white-space: pre;
+      word-spacing: normal;
+      word-break: normal;
+      word-wrap: normal;
+      line-height: 1.4;
+      -moz-tab-size: 8;
+      -o-tab-size: 8;
+      tab-size: 8;
+      -webkit-hyphens: none;
+      -moz-hyphens: none;
+      -ms-hyphens: none;
+      hyphens: none
+    }
+
+    pre[class*=language-] {
+      padding: .8em;
+      overflow: auto;
+      border-radius: 3px;
+      background: #f5f5f5
+    }
+
+    :not(pre)>code[class*=language-] {
+      padding: .1em;
+      border-radius: .3em;
+      white-space: normal;
+      background: #f5f5f5
+    }
+
+    .token.blockquote,
+    .token.comment {
+      color: #969896
+    }
+
+    .token.cdata {
+      color: #183691
+    }
+
+    .token.doctype,
+    .token.macro.property,
+    .token.punctuation,
+    .token.variable {
+      color: #333
+    }
+
+    .token.builtin,
+    .token.important,
+    .token.keyword,
+    .token.operator,
+    .token.rule {
+      color: #a71d5d
+    }
+
+    .token.attr-value,
+    .token.regex,
+    .token.string,
+    .token.url {
+      color: #183691
+    }
+
+    .token.atrule,
+    .token.boolean,
+    .token.code,
+    .token.command,
+    .token.constant,
+    .token.entity,
+    .token.number,
+    .token.property,
+    .token.symbol {
+      color: #0086b3
+    }
+
+    .token.prolog,
+    .token.selector,
+    .token.tag {
+      color: #63a35c
+    }
+
+    .token.attr-name,
+    .token.class,
+    .token.class-name,
+    .token.function,
+    .token.id,
+    .token.namespace,
+    .token.pseudo-class,
+    .token.pseudo-element,
+    .token.url-reference .token.variable {
+      color: #795da3
+    }
+
+    .token.entity {
+      cursor: help
+    }
+
+    .token.title,
+    .token.title .token.punctuation {
+      font-weight: 700;
+      color: #1d3e81
+    }
+
+    .token.list {
+      color: #ed6a43
+    }
+
+    .token.inserted {
+      background-color: #eaffea;
+      color: #55a532
+    }
+
+    .token.deleted {
+      background-color: #ffecec;
+      color: #bd2c00
+    }
+
+    .token.bold {
+      font-weight: 700
+    }
+
+    .token.italic {
+      font-style: italic
+    }
+
+    .language-json .token.property {
+      color: #183691
+    }
+
+    .language-markup .token.tag .token.punctuation {
+      color: #333
+    }
+
+    .language-css .token.function,
+    code.language-css {
+      color: #0086b3
+    }
+
+    .language-yaml .token.atrule {
+      color: #63a35c
+    }
+
+    code.language-yaml {
+      color: #183691
+    }
+
+    .language-ruby .token.function {
+      color: #333
+    }
+
+    .language-markdown .token.url {
+      color: #795da3
+    }
+
+    .language-makefile .token.symbol {
+      color: #795da3
+    }
+
+    .language-makefile .token.variable {
+      color: #183691
+    }
+
+    .language-makefile .token.builtin {
+      color: #0086b3
+    }
+
+    .language-bash .token.keyword {
+      color: #0086b3
+    }
+
+    pre[data-line] {
+      position: relative;
+      padding: 1em 0 1em 3em
+    }
+
+    pre[data-line] .line-highlight-wrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background-color: transparent;
+      display: block;
+      width: 100%
+    }
+
+    pre[data-line] .line-highlight {
+      position: absolute;
+      left: 0;
+      right: 0;
+      padding: inherit 0;
+      margin-top: 1em;
+      background: hsla(24, 20%, 50%, .08);
+      background: linear-gradient(to right, hsla(24, 20%, 50%, .1) 70%, hsla(24, 20%, 50%, 0));
+      pointer-events: none;
+      line-height: inherit;
+      white-space: pre
+    }
+
+    pre[data-line] .line-highlight:before,
+    pre[data-line] .line-highlight[data-end]:after {
+      content: attr(data-start);
+      position: absolute;
+      top: .4em;
+      left: .6em;
+      min-width: 1em;
+      padding: 0 .5em;
+      background-color: hsla(24, 20%, 50%, .4);
+      color: #f4f1ef;
+      font: bold 65%/1.5 sans-serif;
+      text-align: center;
+      vertical-align: .3em;
+      border-radius: 999px;
+      text-shadow: none;
+      box-shadow: 0 1px #fff
+    }
+
+    pre[data-line] .line-highlight[data-end]:after {
+      content: attr(data-end);
+      top: auto;
+      bottom: .4em
+    }
+
+    html body {
+      font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      color: #333;
+      background-color: #fff;
+      overflow: initial;
+      box-sizing: border-box;
+      word-wrap: break-word
+    }
+
+    html body>:first-child {
+      margin-top: 0
+    }
+
+    html body h1,
+    html body h2,
+    html body h3,
+    html body h4,
+    html body h5,
+    html body h6 {
+      line-height: 1.2;
+      margin-top: 1em;
+      margin-bottom: 16px;
+      color: #000
+    }
+
+    html body h1 {
+      font-size: 2.25em;
+      font-weight: 300;
+      padding-bottom: .3em
+    }
+
+    html body h2 {
+      font-size: 1.75em;
+      font-weight: 400;
+      padding-bottom: .3em
+    }
+
+    html body h3 {
+      font-size: 1.5em;
+      font-weight: 500
+    }
+
+    html body h4 {
+      font-size: 1.25em;
+      font-weight: 600
+    }
+
+    html body h5 {
+      font-size: 1.1em;
+      font-weight: 600
+    }
+
+    html body h6 {
+      font-size: 1em;
+      font-weight: 600
+    }
+
+    html body h1,
+    html body h2,
+    html body h3,
+    html body h4,
+    html body h5 {
+      font-weight: 600
+    }
+
+    html body h5 {
+      font-size: 1em
+    }
+
+    html body h6 {
+      color: #5c5c5c
+    }
+
+    html body strong {
+      color: #000
+    }
+
+    html body del {
+      color: #5c5c5c
+    }
+
+    html body a:not([href]) {
+      color: inherit;
+      text-decoration: none
+    }
+
+    html body a {
+      color: #08c;
+      text-decoration: none
+    }
+
+    html body a:hover {
+      color: #00a3f5;
+      text-decoration: none
+    }
+
+    html body img {
+      max-width: 100%
+    }
+
+    html body>p {
+      margin-top: 0;
+      margin-bottom: 16px;
+      word-wrap: break-word
+    }
+
+    html body>ol,
+    html body>ul {
+      margin-bottom: 16px
+    }
+
+    html body ol,
+    html body ul {
+      padding-left: 2em
+    }
+
+    html body ol.no-list,
+    html body ul.no-list {
+      padding: 0;
+      list-style-type: none
+    }
+
+    html body ol ol,
+    html body ol ul,
+    html body ul ol,
+    html body ul ul {
+      margin-top: 0;
+      margin-bottom: 0
+    }
+
+    html body li {
+      margin-bottom: 0
+    }
+
+    html body li.task-list-item {
+      list-style: none
+    }
+
+    html body li>p {
+      margin-top: 0;
+      margin-bottom: 0
+    }
+
+    html body .task-list-item-checkbox {
+      margin: 0 .2em .25em -1.8em;
+      vertical-align: middle
+    }
+
+    html body .task-list-item-checkbox:hover {
+      cursor: pointer
+    }
+
+    html body blockquote {
+      margin: 16px 0;
+      font-size: inherit;
+      padding: 0 15px;
+      color: #5c5c5c;
+      background-color: #f0f0f0;
+      border-left: 4px solid #d6d6d6
+    }
+
+    html body blockquote>:first-child {
+      margin-top: 0
+    }
+
+    html body blockquote>:last-child {
+      margin-bottom: 0
+    }
+
+    html body hr {
+      height: 4px;
+      margin: 32px 0;
+      background-color: #d6d6d6;
+      border: 0 none
+    }
+
+    html body table {
+      margin: 10px 0 15px 0;
+      border-collapse: collapse;
+      border-spacing: 0;
+      display: block;
+      width: 100%;
+      overflow: auto;
+      word-break: normal;
+      word-break: keep-all
+    }
+
+    html body table th {
+      font-weight: 700;
+      color: #000
+    }
+
+    html body table td,
+    html body table th {
+      border: 1px solid #d6d6d6;
+      padding: 6px 13px
+    }
+
+    html body dl {
+      padding: 0
+    }
+
+    html body dl dt {
+      padding: 0;
+      margin-top: 16px;
+      font-size: 1em;
+      font-style: italic;
+      font-weight: 700
+    }
+
+    html body dl dd {
+      padding: 0 16px;
+      margin-bottom: 16px
+    }
+
+    html body code {
+      font-family: Menlo, Monaco, Consolas, 'Courier New', monospace;
+      font-size: .85em;
+      color: #000;
+      background-color: #f0f0f0;
+      border-radius: 3px;
+      padding: .2em 0
+    }
+
+    html body code::after,
+    html body code::before {
+      letter-spacing: -.2em;
+      content: '\00a0'
+    }
+
+    html body pre>code {
+      padding: 0;
+      margin: 0;
+      word-break: normal;
+      white-space: pre;
+      background: 0 0;
+      border: 0
+    }
+
+    html body .highlight {
+      margin-bottom: 16px
+    }
+
+    html body .highlight pre,
+    html body pre {
+      padding: 1em;
+      overflow: auto;
+      line-height: 1.45;
+      border: #d6d6d6;
+      border-radius: 3px
+    }
+
+    html body .highlight pre {
+      margin-bottom: 0;
+      word-break: normal
+    }
+
+    html body pre code,
+    html body pre tt {
+      display: inline;
+      max-width: initial;
+      padding: 0;
+      margin: 0;
+      overflow: initial;
+      line-height: inherit;
+      word-wrap: normal;
+      background-color: transparent;
+      border: 0
+    }
+
+    html body pre code:after,
+    html body pre code:before,
+    html body pre tt:after,
+    html body pre tt:before {
+      content: normal
+    }
+
+    html body blockquote,
+    html body dl,
+    html body ol,
+    html body p,
+    html body pre,
+    html body ul {
+      margin-top: 0;
+      margin-bottom: 16px
+    }
+
+    html body kbd {
+      color: #000;
+      border: 1px solid #d6d6d6;
+      border-bottom: 2px solid #c7c7c7;
+      padding: 2px 4px;
+      background-color: #f0f0f0;
+      border-radius: 3px
+    }
+
+    @media print {
+      html body {
+        background-color: #fff
+      }
+
+      html body h1,
+      html body h2,
+      html body h3,
+      html body h4,
+      html body h5,
+      html body h6 {
+        color: #000;
+        page-break-after: avoid
+      }
+
+      html body blockquote {
+        color: #5c5c5c
+      }
+
+      html body pre {
+        page-break-inside: avoid
+      }
+
+      html body table {
+        display: table
+      }
+
+      html body img {
+        display: block;
+        max-width: 100%;
+        max-height: 100%
+      }
+
+      html body code,
+      html body pre {
+        word-wrap: break-word;
+        white-space: pre
+      }
+    }
+
+    .markdown-preview {
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box
+    }
+
+    .markdown-preview ul {
+      list-style: disc
+    }
+
+    .markdown-preview ul ul {
+      list-style: circle
+    }
+
+    .markdown-preview ul ul ul {
+      list-style: square
+    }
+
+    .markdown-preview ol {
+      list-style: decimal
+    }
+
+    .markdown-preview ol ol,
+    .markdown-preview ul ol {
+      list-style-type: lower-roman
+    }
+
+    .markdown-preview ol ol ol,
+    .markdown-preview ol ul ol,
+    .markdown-preview ul ol ol,
+    .markdown-preview ul ul ol {
+      list-style-type: lower-alpha
+    }
+
+    .markdown-preview .newpage,
+    .markdown-preview .pagebreak {
+      page-break-before: always
+    }
+
+    .markdown-preview pre.line-numbers {
+      position: relative;
+      padding-left: 3.8em;
+      counter-reset: linenumber
+    }
+
+    .markdown-preview pre.line-numbers>code {
+      position: relative
+    }
+
+    .markdown-preview pre.line-numbers .line-numbers-rows {
+      position: absolute;
+      pointer-events: none;
+      top: 1em;
+      font-size: 100%;
+      left: 0;
+      width: 3em;
+      letter-spacing: -1px;
+      border-right: 1px solid #999;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none
+    }
+
+    .markdown-preview pre.line-numbers .line-numbers-rows>span {
+      pointer-events: none;
+      display: block;
+      counter-increment: linenumber
+    }
+
+    .markdown-preview pre.line-numbers .line-numbers-rows>span:before {
+      content: counter(linenumber);
+      color: #999;
+      display: block;
+      padding-right: .8em;
+      text-align: right
+    }
+
+    .markdown-preview .mathjax-exps .MathJax_Display {
+      text-align: center !important
+    }
+
+    .markdown-preview:not([data-for=preview]) .code-chunk .code-chunk-btn-group {
+      display: none
+    }
+
+    .markdown-preview:not([data-for=preview]) .code-chunk .status {
+      display: none
+    }
+
+    .markdown-preview:not([data-for=preview]) .code-chunk .output-div {
+      margin-bottom: 16px
+    }
+
+    .markdown-preview .md-toc {
+      padding: 0
+    }
+
+    .markdown-preview .md-toc .md-toc-details {
+      margin: 0;
+      padding: 0;
+      border: none
+    }
+
+    .markdown-preview .md-toc summary.md-toc-link-wrapper {
+      cursor: pointer;
+      list-style-position: outside
+    }
+
+    .markdown-preview .md-toc summary.md-toc-link-wrapper::marker {
+      font-size: .85em
+    }
+
+    .markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link {
+      display: inline;
+      padding: .25rem 0
+    }
+
+    .markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link div,
+    .markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link p {
+      display: inline
+    }
+
+    .markdown-preview .md-toc .md-toc-link-wrapper.highlighted .md-toc-link {
+      font-weight: 800
+    }
+
+    .markdown-preview .md-toc .md-toc-link-wrapper[data-level='0'] {
+      margin-left: 12px
+    }
+
+    .markdown-preview .md-toc .md-toc-link-wrapper[data-level='1'] {
+      margin-left: 28px
+    }
+
+    .markdown-preview .md-toc .md-toc-link-wrapper[data-level='2'] {
+      margin-left: 44px
+    }
+
+    .markdown-preview .md-toc .md-toc-link-wrapper[data-level='3'] {
+      margin-left: 60px
+    }
+
+    .markdown-preview .md-toc .md-toc-link-wrapper[data-level='4'] {
+      margin-left: 76px
+    }
+
+    .markdown-preview .md-toc .md-toc-link-wrapper[data-level='5'] {
+      margin-left: 80px
+    }
+
+    .scrollbar-style::-webkit-scrollbar {
+      width: 8px
+    }
+
+    .scrollbar-style::-webkit-scrollbar-track {
+      border-radius: 10px;
+      background-color: transparent
+    }
+
+    .scrollbar-style::-webkit-scrollbar-thumb {
+      border-radius: 5px;
+      background-color: rgba(150, 150, 150, .66);
+      border: 4px solid rgba(150, 150, 150, .66);
+      background-clip: content-box
+    }
+
+    html body[for=html-export]:not([data-presentation-mode]) {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      margin: 0;
+      padding: 0;
+      overflow: auto
+    }
+
+    html body[for=html-export]:not([data-presentation-mode]) .markdown-preview {
+      position: relative;
+      top: 0;
+      min-height: 100vh
+    }
+
+    @media screen and (min-width:914px) {
+      html body[for=html-export]:not([data-presentation-mode]) .markdown-preview {
+        padding: 2em calc(50% - 457px + 2em)
+      }
+    }
+
+    @media screen and (max-width:914px) {
+      html body[for=html-export]:not([data-presentation-mode]) .markdown-preview {
+        padding: 2em
+      }
+    }
+
+    @media screen and (max-width:450px) {
+      html body[for=html-export]:not([data-presentation-mode]) .markdown-preview {
+        font-size: 14px !important;
+        padding: 1em
+      }
+    }
+
+    @media print {
+      html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn {
+        display: none
+      }
+    }
+
+    html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn {
+      position: fixed;
+      bottom: 8px;
+      left: 8px;
+      font-size: 28px;
+      cursor: pointer;
+      color: inherit;
+      z-index: 99;
+      width: 32px;
+      text-align: center;
+      opacity: .4
+    }
+
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] #sidebar-toc-btn {
+      opacity: 1
+    }
+
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 300px;
+      height: 100%;
+      padding: 32px 0 48px 0;
+      font-size: 14px;
+      box-shadow: 0 0 4px rgba(150, 150, 150, .33);
+      box-sizing: border-box;
+      overflow: auto;
+      background-color: inherit
+    }
+
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar {
+      width: 8px
+    }
+
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-track {
+      border-radius: 10px;
+      background-color: transparent
+    }
+
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-thumb {
+      border-radius: 5px;
+      background-color: rgba(150, 150, 150, .66);
+      border: 4px solid rgba(150, 150, 150, .66);
+      background-clip: content-box
+    }
+
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc a {
+      text-decoration: none
+    }
+
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc {
+      padding: 0 16px
+    }
+
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-details {
+      margin: 0;
+      padding: 0;
+      border: none
+    }
+
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link {
+      display: inline;
+      padding: .25rem 0
+    }
+
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link div,
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link p {
+      display: inline
+    }
+
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper.highlighted .md-toc-link {
+      font-weight: 800
+    }
+
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper[data-level='0'] {
+      padding-left: 0
+    }
+
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper[data-level='1'] {
+      padding-left: 16px
+    }
+
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper[data-level='2'] {
+      padding-left: 32px
+    }
+
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper[data-level='3'] {
+      padding-left: 48px
+    }
+
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper[data-level='4'] {
+      padding-left: 64px
+    }
+
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper[data-level='5'] {
+      padding-left: 80px
+    }
+
+    html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview {
+      left: 300px;
+      width: calc(100% - 300px);
+      padding: 2em calc(50% - 457px - 300px / 2);
+      margin: 0;
+      box-sizing: border-box
+    }
+
+    @media screen and (max-width:1274px) {
+      html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview {
+        padding: 2em
+      }
+    }
+
+    @media screen and (max-width:450px) {
+      html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview {
+        width: 100%
+      }
+    }
+
+    html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .markdown-preview {
+      left: 50%;
+      transform: translateX(-50%)
+    }
+
+    html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .md-sidebar-toc {
+      display: none
+    }
+
+    @font-face {
+      font-family: "Material Icons";
+      font-style: normal;
+      font-weight: 400;
+      src: local("Material Icons"), local("MaterialIcons-Regular"), url("data:application/x-font-woff;charset=utf-8;base64,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") format("woff")
+    }
+
+    .callout {
+      --callout-color: 68, 138, 255;
+      position: relative;
+      overflow: hidden;
+      border-radius: 4px;
+      margin: 1rem 0;
+      padding: .75rem 1rem;
+      background: rgba(var(--callout-color), .1)
+    }
+
+    .callout>.callout-title {
+      margin: 0 -1.2rem;
+      padding: 0 1.2rem 0 3.3rem;
+      font-weight: 700;
+      color: rgb(var(--callout-color))
+    }
+
+    .callout .callout-title::before {
+      position: absolute;
+      left: 1.2rem;
+      font-size: 1.2rem;
+      font-family: Material Icons;
+      font-style: normal;
+      font-variant: normal;
+      font-weight: 400;
+      text-transform: none;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      color: rgba(var(--callout-color), .8);
+      content: var(--callout-icon, "i")
+    }
+
+    .callout>p {
+      margin-block-start: 1rem;
+      margin-block-end: 1rem;
+      padding-left: .4rem
+    }
+
+    .callout details.callout-title,
+    .callout summary.callout-title {
+      cursor: pointer;
+      list-style: none
+    }
+
+    .callout summary.callout-title::-webkit-details-marker {
+      display: none
+    }
+
+    details.callout>summary.callout-title::after {
+      display: inline-block;
+      width: .45em;
+      height: .45em;
+      margin-left: 1em;
+      border-right: 2px solid rgb(var(--callout-color));
+      border-bottom: 2px solid rgb(var(--callout-color));
+      transform: translateY(-.05em) rotate(-45deg);
+      transition: transform 160ms ease, opacity 160ms ease;
+      opacity: .9;
+      content: ""
+    }
+
+    details.callout[open]>summary.callout-title::after {
+      transform: translateY(-.05em) rotate(45deg);
+      opacity: 1
+    }
+
+    .callout[data-callout=abstract],
+    .callout[data-callout=summary],
+    .callout[data-callout=tldr] {
+      --callout-color: 0, 191, 188;
+      --callout-icon: "\E8D2"
+    }
+
+    .callout[data-callout=note] {
+      --callout-color: 8, 109, 221;
+      --callout-icon: "\E3C9"
+    }
+
+    .callout[data-callout=info] {
+      --callout-color: 8, 109, 221;
+      --callout-icon: "\E88E"
+    }
+
+    .callout[data-callout=todo] {
+      --callout-color: 8, 109, 221;
+      --callout-icon: "\E88E"
+    }
+
+    .callout[data-callout=hint],
+    .callout[data-callout=important],
+    .callout[data-callout=tip] {
+      --callout-color: 0, 191, 188;
+      --callout-icon: "\E80E"
+    }
+
+    .callout[data-callout=check],
+    .callout[data-callout=done],
+    .callout[data-callout=success] {
+      --callout-color: 8, 185, 78;
+      --callout-icon: "\E876"
+    }
+
+    .callout[data-callout=faq],
+    .callout[data-callout=help],
+    .callout[data-callout=question] {
+      --callout-color: 236, 117, 0;
+      --callout-icon: "\E887"
+    }
+
+    .callout[data-callout=attention],
+    .callout[data-callout=caution],
+    .callout[data-callout=warning] {
+      --callout-color: 236, 117, 0;
+      --callout-icon: "\E002"
+    }
+
+    .callout[data-callout=fail],
+    .callout[data-callout=failure],
+    .callout[data-callout=missing] {
+      --callout-color: 233, 49, 71;
+      --callout-icon: "\E14C"
+    }
+
+    .callout[data-callout=danger],
+    .callout[data-callout=error] {
+      --callout-color: 233, 49, 71;
+      --callout-icon: "\E3E7"
+    }
+
+    .callout[data-callout=bug] {
+      --callout-color: 233, 49, 71;
+      --callout-icon: "\E868"
+    }
+
+    .callout[data-callout=example] {
+      --callout-color: 120, 82, 238;
+      --callout-icon: "\E242"
+    }
+
+    .callout[data-callout=cite],
+    .callout[data-callout=quote] {
+      --callout-color: 158, 158, 158;
+      --callout-icon: "\E244"
+    }
+
+    .callout .callout {
+      margin: .75rem 0
+    }
+
+    /* 
    GitHub Dark Mode Styling (Fixed Visibility & Specificity)
    Based on sindresorhus/github-markdown-css 
 */
-/* エクスポートしたHTML全体をダークモードにするための設定 */
-html,
-body {
-  background-color: #0d1117 !important;
-  color: #f0f6fc !important;
-}
-.markdown-preview.markdown-preview {
-  color-scheme: dark;
-  --fgColor-default: #f0f6fc;
-  --fgColor-muted: #9198a1;
-  --fgColor-accent: #4493f8;
-  --bgColor-default: #0d1117;
-  --bgColor-muted: #161b22;
-  --borderColor-default: #3d444d;
-  --borderColor-muted: #3d444db3;
-  --borderColor-accent-emphasis: #1f6feb;
-  box-sizing: border-box;
-  margin: 0 auto;
-  padding: 45px;
-  background-color: var(--bgColor-default) !important;
-  color: var(--fgColor-default) !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
-  word-wrap: break-word;
-  /* 強力なテキストカラーの上書き */
-}
-.markdown-preview.markdown-preview,
-.markdown-preview.markdown-preview p,
-.markdown-preview.markdown-preview div,
-.markdown-preview.markdown-preview span,
-.markdown-preview.markdown-preview li,
-.markdown-preview.markdown-preview dt,
-.markdown-preview.markdown-preview dd,
-.markdown-preview.markdown-preview strong,
-.markdown-preview.markdown-preview b,
-.markdown-preview.markdown-preview em,
-.markdown-preview.markdown-preview th,
-.markdown-preview.markdown-preview td {
-  color: var(--fgColor-default) !important;
-}
-.markdown-preview.markdown-preview h1,
-.markdown-preview.markdown-preview h2,
-.markdown-preview.markdown-preview h3,
-.markdown-preview.markdown-preview h4,
-.markdown-preview.markdown-preview h5,
-.markdown-preview.markdown-preview h6 {
-  margin-top: 24px;
-  margin-bottom: 16px;
-  font-weight: 600;
-  line-height: 1.25;
-  color: var(--fgColor-default) !important;
-  border-bottom: none;
-}
-.markdown-preview.markdown-preview h1 {
-  font-size: 2em;
-  padding-bottom: 0.3em;
-  border-bottom: 1px solid var(--borderColor-muted) !important;
-}
-.markdown-preview.markdown-preview h2 {
-  font-size: 1.5em;
-  padding-bottom: 0.3em;
-  border-bottom: 1px solid var(--borderColor-muted) !important;
-}
-.markdown-preview.markdown-preview a {
-  background-color: transparent;
-  color: var(--fgColor-accent) !important;
-  text-decoration: none;
-}
-.markdown-preview.markdown-preview a:hover {
-  text-decoration: underline;
-}
-.markdown-preview.markdown-preview ul,
-.markdown-preview.markdown-preview ol {
-  padding-left: 2em !important;
-  margin-top: 0;
-  margin-bottom: 16px;
-}
-.markdown-preview.markdown-preview ul li,
-.markdown-preview.markdown-preview ol li {
-  margin-top: 0.25em;
-}
-.markdown-preview.markdown-preview ul li > p,
-.markdown-preview.markdown-preview ol li > p {
-  margin-top: 16px;
-}
-.markdown-preview.markdown-preview blockquote {
-  padding: 0 1em;
-  color: var(--fgColor-muted) !important;
-  border-left: 0.25em solid var(--borderColor-default);
-  margin: 0 0 16px 0;
-  background: transparent !important;
-}
-.markdown-preview.markdown-preview blockquote > * {
-  color: var(--fgColor-muted) !important;
-}
-.markdown-preview.markdown-preview table {
-  display: block;
-  width: 100%;
-  width: max-content;
-  max-width: 100%;
-  overflow: auto;
-  border-spacing: 0;
-  border-collapse: collapse;
-  margin-bottom: 16px;
-  background-color: transparent !important;
-}
-.markdown-preview.markdown-preview table tr {
-  background-color: var(--bgColor-default) !important;
-  border-top: 1px solid var(--borderColor-muted) !important;
-}
-.markdown-preview.markdown-preview table tr:nth-child(2n) {
-  background-color: var(--bgColor-muted) !important;
-}
-.markdown-preview.markdown-preview table th,
-.markdown-preview.markdown-preview table td {
-  padding: 6px 13px;
-  border: 1px solid var(--borderColor-default) !important;
-}
-.markdown-preview.markdown-preview table th {
-  font-weight: 600;
-  background-color: var(--bgColor-muted);
-}
-.markdown-preview.markdown-preview code {
-  padding: 0.2em 0.4em;
-  margin: 0;
-  font-size: 85%;
-  background-color: rgba(110, 118, 129, 0.4) !important;
-  border-radius: 6px;
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-  color: var(--fgColor-default) !important;
-}
-.markdown-preview.markdown-preview code::before,
-.markdown-preview.markdown-preview code::after {
-  content: none !important;
-}
-.markdown-preview.markdown-preview pre {
-  padding: 16px;
-  overflow: auto;
-  font-size: 85%;
-  line-height: 1.45;
-  background-color: var(--bgColor-muted) !important;
-  border-radius: 6px;
-  margin-bottom: 16px;
-  border: none !important;
-}
-.markdown-preview.markdown-preview pre code {
-  padding: 0;
-  margin: 0;
-  font-size: 100%;
-  background-color: transparent !important;
-  border: 0;
-  word-break: normal;
-  white-space: pre;
-}
-.markdown-preview.markdown-preview hr {
-  height: 0.25em;
-  padding: 0;
-  margin: 24px 0;
-  background-color: var(--borderColor-default) !important;
-  border: 0;
-}
-.markdown-preview.markdown-preview img {
-  max-width: 100%;
-  box-sizing: content-box;
-  background-color: transparent !important;
-}
-@media (max-width: 767px) {
-  .markdown-preview.markdown-preview {
-    padding: 15px;
-  }
-}
+    /* エクスポートしたHTML全体をダークモードにするための設定 */
+    html,
+    body {
+      background-color: #0d1117 !important;
+      color: #f0f6fc !important;
+    }
 
-      </style>
-      <script type="text/javascript">
-  document.addEventListener("DOMContentLoaded", function () {
-    // your code here
-  });
-</script>
-    </head>
-    <body for="html-export">
-      <div class="crossnote markdown-preview  ">
-      
-<p align="right">
-  <a href="README.md">日本語</a> | English
-</p>
-<h1 id="-mug-advanced-halftone">🎨 Mug Advanced Halftone </h1>
-<p align="left">
-  <a href="https://github.com/mug-lab-3/mug-advanced-halftone/releases"><img src="https://img.shields.io/github/v/release/mug-lab-3/mug-advanced-halftone?label=version&amp;color=orange" alt="Latest Version"></a> <a href="https://github.com/mug-lab-3/mug-advanced-halftone/blob/main/LICENSE"><img src="https://img.shields.io/github/license/mug-lab-3/mug-advanced-halftone?color=blue" alt="License"></a> <a href="https://github.com/mug-lab-3/mug-advanced-halftone/releases"><img src="https://img.shields.io/github/downloads/mug-lab-3/mug-advanced-halftone/total?label=downloads&amp;color=green" alt="Downloads"></a> <a href="https://github.com/mug-lab-3/mug-advanced-halftone/releases/latest"><img src="https://img.shields.io/badge/Release--Notes-latest-blue?logo=github" alt="Release Notes"></a>
-</p>
-<p align="center">
-  <img src="images/sample.jpg" alt="MugAdvancedHalftone sample" width="600">
-</p>
-<h2 id="-overview">📝 Overview </h2>
-<p><code>MugAdvancedHalftone</code> is a halftone generation plugin for DaVinci Resolve / Fusion.<br>
-It simulates textures such as classic halftone dots, comic book styles, pixel art, retro PC graphics, and thermal camera visuals.</p>
-<h3 id="-key-features">✨ Key Features </h3>
-<ul>
-<li><strong>Grid</strong>: Natural halftone patterns with hexagonal (honeycomb) placement.</li>
-<li><strong>Dot Shapes</strong>: Circle, Square, Diamond, Line, and Crosshatch.</li>
-<li><strong>Jitter</strong>: Individual randomization for Position, Size, Aspect Ratio, and Angle.</li>
-<li><strong>Color</strong>: Palette limitations (e.g., 16 colors) and reproduction of RGB Shift (misregistration).</li>
-<li><strong>Drawing Control</strong>: Antialiasing, Invert Brightness, and Dot Gain adjustments.</li>
-</ul>
-<hr>
-<h2 id="-installation">📦 Installation </h2>
-<p>To use this effect, place the following files in the specified folders for your OS.</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">File</th>
-<th style="text-align:center">Required</th>
-<th style="text-align:left">Purpose</th>
-<th style="text-align:left">Destination Folder</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left"><a href="https://github.com/mug-lab-3/mug-advanced-halftone/releases/latest/download/MugAdvancedHalftone.fuse"><strong>MugAdvancedHalftone.fuse</strong></a></td>
-<td style="text-align:center"><strong>Required</strong></td>
-<td style="text-align:left">Plugin core (for Fusion)</td>
-<td style="text-align:left"><code>Fuses</code></td>
-</tr>
-<tr>
-<td style="text-align:left"><a href="https://github.com/mug-lab-3/mug-advanced-halftone/releases/latest/download/MugAdvancedHalftone.setting"><strong>MugAdvancedHalftone.setting</strong></a></td>
-<td style="text-align:center"><strong>Required</strong></td>
-<td style="text-align:left">Preset for Edit Page</td>
-<td style="text-align:left"><code>Templates/Edit/Effects</code></td>
-</tr>
-<tr>
-<td style="text-align:left"><a href="https://github.com/mug-lab-3/mug-advanced-halftone/releases/latest/download/MugAdvancedHalftone.png"><strong>MugAdvancedHalftone.png</strong></a></td>
-<td style="text-align:center">Optional</td>
-<td style="text-align:left">Icon image</td>
-<td style="text-align:left"><code>Templates/Edit/Effects</code></td>
-</tr>
-</tbody>
-</table>
-<h3 id="folder-paths">Folder Paths </h3>
-<div class="callout" data-callout="note">
-<div class="callout-title">Note</div>
-<p>By default, the destination folders such as <code>Fuses</code> or <code>Templates/Edit/Effects</code> might not exist. If you don't see them, please create the folders manually and place the files inside.</p>
-</div>
-<div class="callout" data-callout="tip">
-<div class="callout-title">Tip</div>
-<p><strong>Easy Access Tips</strong></p>
-<ul>
-<li><strong>Windows</strong>: Simply paste the path above into the File Explorer's address bar and press <code>Enter</code> to jump directly to the folder.</li>
-<li><strong>Mac</strong>: The <code>Library</code> folder is hidden by default. To easily navigate to it, open Finder, press <code>Cmd + Shift + G</code> (Go to Folder), paste the path, and press <code>Enter</code>.</li>
-</ul>
-</div>
-<h4 id="-fuses-folder-place-fuse-here">📂 Fuses Folder (Place <code>.fuse</code> here) </h4>
-<p><strong>Windows</strong></p>
-<pre data-role="codeBlock" data-info="text" class="language-text text"><code>%AppData%\Blackmagic Design\DaVinci Resolve\Support\Fusion\Fuses\
-</code></pre><p><strong>macOS</strong></p>
-<pre data-role="codeBlock" data-info="text" class="language-text text"><code>~/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Fuses/
-</code></pre><p><strong>Linux</strong></p>
-<pre data-role="codeBlock" data-info="text" class="language-text text"><code>~/.local/share/BlackmagicDesign/DaVinciResolve/Fusion/Fuses/
-</code></pre><h4 id="-templatesediteffects-folder-place-setting-and-png-here">📂 Templates/Edit/Effects Folder (Place <code>.setting</code> and <code>.png</code> here) </h4>
-<p><strong>Windows</strong></p>
-<pre data-role="codeBlock" data-info="text" class="language-text text"><code>%AppData%\Blackmagic Design\DaVinci Resolve\Support\Fusion\Templates\Edit\Effects\
-</code></pre><p><strong>macOS</strong></p>
-<pre data-role="codeBlock" data-info="text" class="language-text text"><code>~/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Templates/Edit/Effects/
-</code></pre><p><strong>Linux</strong></p>
-<pre data-role="codeBlock" data-info="text" class="language-text text"><code>~/.local/share/BlackmagicDesign/DaVinciResolve/Fusion/Templates/Edit/Effects/
-</code></pre><hr>
-<h2 id="️-parameters">⚙️ Parameters </h2>
-<details>
-<summary><b>Click to expand Parameter Reference</b></summary>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">Section</th>
-<th style="text-align:left">Parameter</th>
-<th style="text-align:left">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left"><strong>Global</strong></td>
-<td style="text-align:left">Screen Density</td>
-<td style="text-align:left">Fineness of the dots</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Contrast</td>
-<td style="text-align:left">Adjust the contrast of the original image</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Invert Brightness</td>
-<td style="text-align:left">Inverts light and dark (Subtractive Mode)</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Margin X</td>
-<td style="text-align:left">Horizontal spacing adjustment</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Margin Y</td>
-<td style="text-align:left">Vertical spacing adjustment</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Screen Aspect Ratio</td>
-<td style="text-align:left">Aspect ratio of the screen (global pattern distortion)</td>
-</tr>
-<tr>
-<td style="text-align:left"><strong>Dot Shape</strong></td>
-<td style="text-align:left">Dot Shape</td>
-<td style="text-align:left">The shape of the dots</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Staggered Grid</td>
-<td style="text-align:left">Honeycomb arrangement (Straight if Off)</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Line Angle</td>
-<td style="text-align:left">Angle of lines or halftone screens</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Dot Gain</td>
-<td style="text-align:left">Dot thickening/ink bleed</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Dot Size Curve</td>
-<td style="text-align:left">Growth curve of dot size</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Cutoff Dot Radius</td>
-<td style="text-align:left">Minimum radius to be drawn</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Clip Dot Radius</td>
-<td style="text-align:left">Maximum size limit</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Enable Antialias</td>
-<td style="text-align:left">Edge smoothing process</td>
-</tr>
-<tr>
-<td style="text-align:left"><strong>Dot Jitter</strong></td>
-<td style="text-align:left">Jitter Noise Phase</td>
-<td style="text-align:left">Animation phase</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Position Jitter</td>
-<td style="text-align:left">Random positional offset</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Size Jitter</td>
-<td style="text-align:left">Random size variation</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Aspect Jitter</td>
-<td style="text-align:left">Random aspect ratio distortion</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Angle Jitter</td>
-<td style="text-align:left">Random rotation</td>
-</tr>
-<tr>
-<td style="text-align:left"><strong>Dot Color</strong></td>
-<td style="text-align:left">Use Original Color</td>
-<td style="text-align:left">Use the colors from the original image for dots</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Color Reduction</td>
-<td style="text-align:left">Limit the color palette</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">RGB Shift</td>
-<td style="text-align:left">Strength of misregistration/chromatic aberration</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Dot Color</td>
-<td style="text-align:left">Custom dot color setting</td>
-</tr>
-<tr>
-<td style="text-align:left"><strong>Background Color</strong></td>
-<td style="text-align:left">Blend With Input</td>
-<td style="text-align:left">Composite directly onto the original image</td>
-</tr>
-<tr>
-<td style="text-align:left"></td>
-<td style="text-align:left">Paper Color</td>
-<td style="text-align:left">Background color (Paper color)</td>
-</tr>
-</tbody>
-</table>
-</details>
-<hr>
-<h2 id="️-license">⚖️ License </h2>
-<p>This project is released under the <strong>MIT License</strong>.<br>
-See the <a href="./LICENSE">LICENSE</a> file for details.</p>
-<div class="callout" data-callout="note">
-<div class="callout-title">Note</div>
-<p><strong>Note for Video Creators:</strong><br>
-Including copyright notices or credits in your video works (rendered outputs) created using this Fuse is optional and NOT required. Feel free to use it for both commercial and non-commercial projects!</p>
-</div>
-<h3 id="-permissions-ok">✅ Permissions (OK) </h3>
-<ul>
-<li><strong>Commercial Use</strong>: Use it freely for YouTube videos, advertisements, films, etc.</li>
-<li><strong>Modification</strong>: You can modify the Fuse file contents for personal adjustment.</li>
-<li><strong>Redistribution</strong>: You can introduce and distribute it on your site as long as you comply with the terms (requires copyright notice).</li>
-</ul>
-<h3 id="-restrictions-ng">❌ Restrictions (NG) </h3>
-<ul>
-<li><strong>No Warranty</strong>: The author assumes no responsibility for any damage caused by using this plugin.</li>
-<li><strong>Copyright Removal</strong>: You must not remove the author's name or license terms from the source code.</li>
-</ul>
-<hr>
-<h2 id="-changelog">📜 Changelog </h2>
-<h3 id="v301-20260425">v3.01 (2026/04/25) </h3>
-<ul>
-<li><strong>Performance Optimization</strong>: Optimized GPU computation and memory management to improve overall performance.</li>
-<li><strong>Parameter Consolidation</strong>: Unified redundant parameters like "Brightness Cutoff" into "Min Dot Radius" to simplify the UI.</li>
-<li><strong>UI Improvement</strong>: Refined parameter names such as "Staggered Grid" and "Background Color" for consistency, and updated the "About" section to be simpler and clearer.</li>
-</ul>
-<h3 id="v234-20260413">v2.34 (2026/04/13) </h3>
-<ul>
-<li><strong>Mac Support</strong>: Resolved an issue where the effect failed to build or render correctly on Mac.</li>
-<li><strong>Internal Refactoring</strong>: Optimized data structures and memory management within the GPU kernel to ensure stability across a wider range of hardware.</li>
-<li><strong>Improved Version Management</strong>: Optimized internal versioning for better compatibility with ecosystem tools.</li>
-</ul>
-<h3 id="v233-20260406">v2.33 (2026/04/06) </h3>
-<ul>
-<li><strong>Edge Rendering Improvements</strong>: Fixed an issue where unnatural dots (outlining) appeared at image edges or around text on transparent backgrounds.</li>
-<li><strong>Improved Sampling Accuracy</strong>: Enhanced internal processing to sample pixel colors more accurately, resulting in stable rendering up to the edges.</li>
-</ul>
-<h3 id="v230-20260405">v2.30 (2026/04/05) </h3>
-<ul>
-<li><strong>UI Reorganization</strong>: Moved the <code>AspectRatio</code> parameter from "Dot Shape" to "Global" and renamed it to <code>Screen Aspect Ratio</code> for a more intuitive density balance adjustment.</li>
-</ul>
-<h3 id="v221-20260405">v2.21 (2026/04/05) </h3>
-<ul>
-<li><strong>Performance Optimization</strong>: Eliminated branching in GPU kernels and replaced math operations with built-in functions for better efficiency.</li>
-<li><strong>Maintenance Improvement</strong>: Structured kernels into logical steps and added extensive comments.</li>
-<li><strong>Stability Fixes</strong>: Balanced vectorization to ensure compatibility with the host (Fusion).</li>
-</ul>
-<h3 id="v210-20260402">v2.10 (2026/04/02) </h3>
-<ul>
-<li>Added Staggered Grid support for Circular and Diamond dots.</li>
-</ul>
-<hr>
-<h2 id="-links">🔗 Links </h2>
-<ul>
-<li><a href="https://www.youtube.com/@MugLab3"><img src="https://cdn.simpleicons.org/youtube" width="16" height="16"> <strong>YouTube: Mug Lab</strong></a></li>
-<li><a href="https://github.com/mug-lab-3/mug-advanced-halftone"><picture><source media="(prefers-color-scheme: dark)" srcset="https://cdn.simpleicons.org/github/white"><img src="https://cdn.simpleicons.org/github/black" width="16" height="16"></picture> <strong>GitHub: Mug Advanced Halftone</strong></a></li>
-<li><a href="https://x.com/MugLab3"><picture><source media="(prefers-color-scheme: dark)" srcset="https://cdn.simpleicons.org/x/white"><img src="https://cdn.simpleicons.org/x/black" width="16" height="16"></picture> <strong>X: @MugLab3</strong></a></li>
-</ul>
+    .markdown-preview.markdown-preview {
+      color-scheme: dark;
+      --fgColor-default: #f0f6fc;
+      --fgColor-muted: #9198a1;
+      --fgColor-accent: #4493f8;
+      --bgColor-default: #0d1117;
+      --bgColor-muted: #161b22;
+      --borderColor-default: #3d444d;
+      --borderColor-muted: #3d444db3;
+      --borderColor-accent-emphasis: #1f6feb;
+      box-sizing: border-box;
+      margin: 0 auto;
+      padding: 45px;
+      background-color: var(--bgColor-default) !important;
+      color: var(--fgColor-default) !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      word-wrap: break-word;
+      /* 強力なテキストカラーの上書き */
+    }
 
-      </div>
-      
-      
-    
-    
-    
-    
-    
-    
-  
-    </body></html>
+    .markdown-preview.markdown-preview,
+    .markdown-preview.markdown-preview p,
+    .markdown-preview.markdown-preview div,
+    .markdown-preview.markdown-preview span,
+    .markdown-preview.markdown-preview li,
+    .markdown-preview.markdown-preview dt,
+    .markdown-preview.markdown-preview dd,
+    .markdown-preview.markdown-preview strong,
+    .markdown-preview.markdown-preview b,
+    .markdown-preview.markdown-preview em,
+    .markdown-preview.markdown-preview th,
+    .markdown-preview.markdown-preview td {
+      color: var(--fgColor-default) !important;
+    }
+
+    .markdown-preview.markdown-preview h1,
+    .markdown-preview.markdown-preview h2,
+    .markdown-preview.markdown-preview h3,
+    .markdown-preview.markdown-preview h4,
+    .markdown-preview.markdown-preview h5,
+    .markdown-preview.markdown-preview h6 {
+      margin-top: 24px;
+      margin-bottom: 16px;
+      font-weight: 600;
+      line-height: 1.25;
+      color: var(--fgColor-default) !important;
+      border-bottom: none;
+    }
+
+    .markdown-preview.markdown-preview h1 {
+      font-size: 2em;
+      padding-bottom: 0.3em;
+      border-bottom: 1px solid var(--borderColor-muted) !important;
+    }
+
+    .markdown-preview.markdown-preview h2 {
+      font-size: 1.5em;
+      padding-bottom: 0.3em;
+      border-bottom: 1px solid var(--borderColor-muted) !important;
+    }
+
+    .markdown-preview.markdown-preview a {
+      background-color: transparent;
+      color: var(--fgColor-accent) !important;
+      text-decoration: none;
+    }
+
+    .markdown-preview.markdown-preview a:hover {
+      text-decoration: underline;
+    }
+
+    .markdown-preview.markdown-preview ul,
+    .markdown-preview.markdown-preview ol {
+      padding-left: 2em !important;
+      margin-top: 0;
+      margin-bottom: 16px;
+    }
+
+    .markdown-preview.markdown-preview ul li,
+    .markdown-preview.markdown-preview ol li {
+      margin-top: 0.25em;
+    }
+
+    .markdown-preview.markdown-preview ul li>p,
+    .markdown-preview.markdown-preview ol li>p {
+      margin-top: 16px;
+    }
+
+    .markdown-preview.markdown-preview blockquote {
+      padding: 0 1em;
+      color: var(--fgColor-muted) !important;
+      border-left: 0.25em solid var(--borderColor-default);
+      margin: 0 0 16px 0;
+      background: transparent !important;
+    }
+
+    .markdown-preview.markdown-preview blockquote>* {
+      color: var(--fgColor-muted) !important;
+    }
+
+    .markdown-preview.markdown-preview table {
+      display: block;
+      width: 100%;
+      width: max-content;
+      max-width: 100%;
+      overflow: auto;
+      border-spacing: 0;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+      background-color: transparent !important;
+    }
+
+    .markdown-preview.markdown-preview table tr {
+      background-color: var(--bgColor-default) !important;
+      border-top: 1px solid var(--borderColor-muted) !important;
+    }
+
+    .markdown-preview.markdown-preview table tr:nth-child(2n) {
+      background-color: var(--bgColor-muted) !important;
+    }
+
+    .markdown-preview.markdown-preview table th,
+    .markdown-preview.markdown-preview table td {
+      padding: 6px 13px;
+      border: 1px solid var(--borderColor-default) !important;
+    }
+
+    .markdown-preview.markdown-preview table th {
+      font-weight: 600;
+      background-color: var(--bgColor-muted);
+    }
+
+    .markdown-preview.markdown-preview code {
+      padding: 0.2em 0.4em;
+      margin: 0;
+      font-size: 85%;
+      background-color: rgba(110, 118, 129, 0.4) !important;
+      border-radius: 6px;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      color: var(--fgColor-default) !important;
+    }
+
+    .markdown-preview.markdown-preview code::before,
+    .markdown-preview.markdown-preview code::after {
+      content: none !important;
+    }
+
+    .markdown-preview.markdown-preview pre {
+      padding: 16px;
+      overflow: auto;
+      font-size: 85%;
+      line-height: 1.45;
+      background-color: var(--bgColor-muted) !important;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      border: none !important;
+    }
+
+    .markdown-preview.markdown-preview pre code {
+      padding: 0;
+      margin: 0;
+      font-size: 100%;
+      background-color: transparent !important;
+      border: 0;
+      word-break: normal;
+      white-space: pre;
+    }
+
+    .markdown-preview.markdown-preview hr {
+      height: 0.25em;
+      padding: 0;
+      margin: 24px 0;
+      background-color: var(--borderColor-default) !important;
+      border: 0;
+    }
+
+    .markdown-preview.markdown-preview img {
+      max-width: 100%;
+      box-sizing: content-box;
+      background-color: transparent !important;
+    }
+
+    @media (max-width: 767px) {
+      .markdown-preview.markdown-preview {
+        padding: 15px;
+      }
+    }
+  </style>
+  <script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function () {
+      // your code here
+    });
+  </script>
+</head>
+
+<body for="html-export">
+  <div class="crossnote markdown-preview  ">
+
+    <p align="right">
+      <a href="README.html">日本語</a> | English
+    </p>
+    <h1 id="-mug-advanced-halftone">🎨 Mug Advanced Halftone </h1>
+    <p align="left">
+      <a href="https://github.com/mug-lab-3/mug-advanced-halftone/releases"><img
+          src="https://img.shields.io/github/v/release/mug-lab-3/mug-advanced-halftone?label=version&amp;color=orange"
+          alt="Latest Version"></a> <a href="https://github.com/mug-lab-3/mug-advanced-halftone/blob/main/LICENSE"><img
+          src="https://img.shields.io/github/license/mug-lab-3/mug-advanced-halftone?color=blue" alt="License"></a> <a
+        href="https://github.com/mug-lab-3/mug-advanced-halftone/releases"><img
+          src="https://img.shields.io/github/downloads/mug-lab-3/mug-advanced-halftone/total?label=downloads&amp;color=green"
+          alt="Downloads"></a> <a href="https://github.com/mug-lab-3/mug-advanced-halftone/releases/latest"><img
+          src="https://img.shields.io/badge/Release--Notes-latest-blue?logo=github" alt="Release Notes"></a>
+    </p>
+    <p align="center">
+      <img src="images/sample.jpg" alt="MugAdvancedHalftone sample" width="600">
+    </p>
+    <h2 id="-overview">📝 Overview </h2>
+    <p><code>MugAdvancedHalftone</code> is a halftone generation plugin for DaVinci Resolve / Fusion.<br>
+      It simulates textures such as classic halftone dots, comic book styles, pixel art, retro PC graphics, and thermal
+      camera visuals.</p>
+    <h3 id="-key-features">✨ Key Features </h3>
+    <ul>
+      <li><strong>Grid</strong>: Natural halftone patterns with hexagonal (honeycomb) placement.</li>
+      <li><strong>Dot Shapes</strong>: Circle, Square, Diamond, Line, and Crosshatch.</li>
+      <li><strong>Jitter</strong>: Individual randomization for Position, Size, Aspect Ratio, and Angle.</li>
+      <li><strong>Color</strong>: Palette limitations (e.g., 16 colors) and reproduction of RGB Shift (misregistration).
+      </li>
+      <li><strong>Drawing Control</strong>: Antialiasing, Invert Brightness, and Dot Gain adjustments.</li>
+    </ul>
+    <hr>
+    <h2 id="-installation">📦 Installation </h2>
+    <p>To use this effect, place the following files in the specified folders for your OS.</p>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align:left">File</th>
+          <th style="text-align:center">Required</th>
+          <th style="text-align:left">Purpose</th>
+          <th style="text-align:left">Destination Folder</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="text-align:left"><a
+              href="https://github.com/mug-lab-3/mug-advanced-halftone/releases/latest/download/MugAdvancedHalftone.fuse"><strong>MugAdvancedHalftone.fuse</strong></a>
+          </td>
+          <td style="text-align:center"><strong>Required</strong></td>
+          <td style="text-align:left">Plugin core (for Fusion)</td>
+          <td style="text-align:left"><code>Fuses</code></td>
+        </tr>
+        <tr>
+          <td style="text-align:left"><a
+              href="https://github.com/mug-lab-3/mug-advanced-halftone/releases/latest/download/MugAdvancedHalftone.setting"><strong>MugAdvancedHalftone.setting</strong></a>
+          </td>
+          <td style="text-align:center"><strong>Required</strong></td>
+          <td style="text-align:left">Preset for Edit Page</td>
+          <td style="text-align:left"><code>Templates/Edit/Effects</code></td>
+        </tr>
+        <tr>
+          <td style="text-align:left"><a
+              href="https://github.com/mug-lab-3/mug-advanced-halftone/releases/latest/download/MugAdvancedHalftone.png"><strong>MugAdvancedHalftone.png</strong></a>
+          </td>
+          <td style="text-align:center">Optional</td>
+          <td style="text-align:left">Icon image</td>
+          <td style="text-align:left"><code>Templates/Edit/Effects</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <h3 id="folder-paths">Folder Paths </h3>
+    <div class="callout" data-callout="note">
+      <div class="callout-title">Note</div>
+      <p>By default, the destination folders such as <code>Fuses</code> or <code>Templates/Edit/Effects</code> might not
+        exist. If you don't see them, please create the folders manually and place the files inside.</p>
+    </div>
+    <div class="callout" data-callout="tip">
+      <div class="callout-title">Tip</div>
+      <p><strong>Easy Access Tips</strong></p>
+      <ul>
+        <li><strong>Windows</strong>: Simply paste the path above into the File Explorer's address bar and press
+          <code>Enter</code> to jump directly to the folder.</li>
+        <li><strong>Mac</strong>: The <code>Library</code> folder is hidden by default. To easily navigate to it, open
+          Finder, press <code>Cmd + Shift + G</code> (Go to Folder), paste the path, and press <code>Enter</code>.</li>
+      </ul>
+    </div>
+    <h4 id="-fuses-folder-place-fuse-here">📂 Fuses Folder (Place <code>.fuse</code> here) </h4>
+    <p><strong>Windows</strong></p>
+    <pre data-role="codeBlock" data-info="text" class="language-text text"><code>%AppData%\Blackmagic Design\DaVinci Resolve\Support\Fusion\Fuses\
+</code></pre>
+    <p><strong>macOS</strong></p>
+    <pre data-role="codeBlock" data-info="text" class="language-text text"><code>~/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Fuses/
+</code></pre>
+    <p><strong>Linux</strong></p>
+    <pre data-role="codeBlock" data-info="text" class="language-text text"><code>~/.local/share/BlackmagicDesign/DaVinciResolve/Fusion/Fuses/
+</code></pre>
+    <h4 id="-templatesediteffects-folder-place-setting-and-png-here">📂 Templates/Edit/Effects Folder (Place
+      <code>.setting</code> and <code>.png</code> here) </h4>
+    <p><strong>Windows</strong></p>
+    <pre data-role="codeBlock" data-info="text" class="language-text text"><code>%AppData%\Blackmagic Design\DaVinci Resolve\Support\Fusion\Templates\Edit\Effects\
+</code></pre>
+    <p><strong>macOS</strong></p>
+    <pre data-role="codeBlock" data-info="text" class="language-text text"><code>~/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Templates/Edit/Effects/
+</code></pre>
+    <p><strong>Linux</strong></p>
+    <pre data-role="codeBlock" data-info="text" class="language-text text"><code>~/.local/share/BlackmagicDesign/DaVinciResolve/Fusion/Templates/Edit/Effects/
+</code></pre>
+    <hr>
+    <h2 id="️-parameters">⚙️ Parameters </h2>
+    <details>
+      <summary><b>Click to expand Parameter Reference</b></summary>
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left">Section</th>
+            <th style="text-align:left">Parameter</th>
+            <th style="text-align:left">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="text-align:left"><strong>Global</strong></td>
+            <td style="text-align:left">Screen Density</td>
+            <td style="text-align:left">Fineness of the dots</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Contrast</td>
+            <td style="text-align:left">Adjust the contrast of the original image</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Invert Brightness</td>
+            <td style="text-align:left">Inverts light and dark (Subtractive Mode)</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Margin X</td>
+            <td style="text-align:left">Horizontal spacing adjustment</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Margin Y</td>
+            <td style="text-align:left">Vertical spacing adjustment</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Screen Aspect Ratio</td>
+            <td style="text-align:left">Aspect ratio of the screen (global pattern distortion)</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"><strong>Dot Shape</strong></td>
+            <td style="text-align:left">Dot Shape</td>
+            <td style="text-align:left">The shape of the dots</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Staggered Grid</td>
+            <td style="text-align:left">Honeycomb arrangement (Straight if Off)</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Line Angle</td>
+            <td style="text-align:left">Angle of lines or halftone screens</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Dot Gain</td>
+            <td style="text-align:left">Dot thickening/ink bleed</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Dot Size Curve</td>
+            <td style="text-align:left">Growth curve of dot size</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Cutoff Dot Radius</td>
+            <td style="text-align:left">Minimum radius to be drawn</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Clip Dot Radius</td>
+            <td style="text-align:left">Maximum size limit</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Enable Antialias</td>
+            <td style="text-align:left">Edge smoothing process</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"><strong>Dot Jitter</strong></td>
+            <td style="text-align:left">Jitter Noise Phase</td>
+            <td style="text-align:left">Animation phase</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Position Jitter</td>
+            <td style="text-align:left">Random positional offset</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Size Jitter</td>
+            <td style="text-align:left">Random size variation</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Aspect Jitter</td>
+            <td style="text-align:left">Random aspect ratio distortion</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Angle Jitter</td>
+            <td style="text-align:left">Random rotation</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"><strong>Dot Color</strong></td>
+            <td style="text-align:left">Use Original Color</td>
+            <td style="text-align:left">Use the colors from the original image for dots</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Color Reduction</td>
+            <td style="text-align:left">Limit the color palette</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">RGB Shift</td>
+            <td style="text-align:left">Strength of misregistration/chromatic aberration</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Dot Color</td>
+            <td style="text-align:left">Custom dot color setting</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"><strong>Background Color</strong></td>
+            <td style="text-align:left">Blend With Input</td>
+            <td style="text-align:left">Composite directly onto the original image</td>
+          </tr>
+          <tr>
+            <td style="text-align:left"></td>
+            <td style="text-align:left">Paper Color</td>
+            <td style="text-align:left">Background color (Paper color)</td>
+          </tr>
+        </tbody>
+      </table>
+    </details>
+    <hr>
+    <h2 id="️-license">⚖️ License </h2>
+    <p>This project is released under the <strong>MIT License</strong>.<br>
+      See the <a href="./LICENSE">LICENSE</a> file for details.</p>
+    <div class="callout" data-callout="note">
+      <div class="callout-title">Note</div>
+      <p><strong>Note for Video Creators:</strong><br>
+        Including copyright notices or credits in your video works (rendered outputs) created using this Fuse is
+        optional and NOT required. Feel free to use it for both commercial and non-commercial projects!</p>
+    </div>
+    <h3 id="-permissions-ok">✅ Permissions (OK) </h3>
+    <ul>
+      <li><strong>Commercial Use</strong>: Use it freely for YouTube videos, advertisements, films, etc.</li>
+      <li><strong>Modification</strong>: You can modify the Fuse file contents for personal adjustment.</li>
+      <li><strong>Redistribution</strong>: You can introduce and distribute it on your site as long as you comply with
+        the terms (requires copyright notice).</li>
+    </ul>
+    <h3 id="-restrictions-ng">❌ Restrictions (NG) </h3>
+    <ul>
+      <li><strong>No Warranty</strong>: The author assumes no responsibility for any damage caused by using this plugin.
+      </li>
+      <li><strong>Copyright Removal</strong>: You must not remove the author's name or license terms from the source
+        code.</li>
+    </ul>
+    <hr>
+    <h2 id="-changelog">📜 Changelog </h2>
+    <h3 id="v302-20260425">v3.02 (2026/04/25) </h3>
+    <ul>
+      <li><strong>Performance Optimization</strong>: Optimized GPU computation and memory management to improve overall
+        performance.</li>
+      <li><strong>Parameter Consolidation</strong>: Unified redundant parameters like "Brightness Cutoff" into "Min Dot
+        Radius" to simplify the UI.</li>
+      <li><strong>UI Improvement</strong>: Refined parameter names such as "Staggered Grid" and "Background Color" for
+        consistency, and updated the "About" section to be simpler and clearer.</li>
+      <li><strong>Default Value Adjustment</strong>: Changed the initial values for Dot Color and Background Color to
+        more versatile, neutral tones.</li>
+    </ul>
+    <h3 id="v234-20260413">v2.34 (2026/04/13) </h3>
+    <ul>
+      <li><strong>Mac Support</strong>: Resolved an issue where the effect failed to build or render correctly on Mac.
+      </li>
+      <li><strong>Internal Refactoring</strong>: Optimized data structures and memory management within the GPU kernel
+        to ensure stability across a wider range of hardware.</li>
+      <li><strong>Improved Version Management</strong>: Optimized internal versioning for better compatibility with
+        ecosystem tools.</li>
+    </ul>
+    <h3 id="v233-20260406">v2.33 (2026/04/06) </h3>
+    <ul>
+      <li><strong>Edge Rendering Improvements</strong>: Fixed an issue where unnatural dots (outlining) appeared at
+        image edges or around text on transparent backgrounds.</li>
+      <li><strong>Improved Sampling Accuracy</strong>: Enhanced internal processing to sample pixel colors more
+        accurately, resulting in stable rendering up to the edges.</li>
+    </ul>
+    <h3 id="v230-20260405">v2.30 (2026/04/05) </h3>
+    <ul>
+      <li><strong>UI Reorganization</strong>: Moved the <code>AspectRatio</code> parameter from "Dot Shape" to "Global"
+        and renamed it to <code>Screen Aspect Ratio</code> for a more intuitive density balance adjustment.</li>
+    </ul>
+    <h3 id="v221-20260405">v2.21 (2026/04/05) </h3>
+    <ul>
+      <li><strong>Performance Optimization</strong>: Eliminated branching in GPU kernels and replaced math operations
+        with built-in functions for better efficiency.</li>
+      <li><strong>Maintenance Improvement</strong>: Structured kernels into logical steps and added extensive comments.
+      </li>
+      <li><strong>Stability Fixes</strong>: Balanced vectorization to ensure compatibility with the host (Fusion).</li>
+    </ul>
+    <h3 id="v210-20260402">v2.10 (2026/04/02) </h3>
+    <ul>
+      <li>Added Staggered Grid support for Circular and Diamond dots.</li>
+    </ul>
+    <hr>
+    <h2 id="-links">🔗 Links </h2>
+    <ul>
+      <li><a href="https://www.youtube.com/@MugLab3"><img src="https://cdn.simpleicons.org/youtube" width="16"
+            height="16"> <strong>YouTube: Mug Lab</strong></a></li>
+      <li><a href="https://github.com/mug-lab-3/mug-advanced-halftone">
+          <picture>
+            <source media="(prefers-color-scheme: dark)" srcset="https://cdn.simpleicons.org/github/white"><img
+              src="https://cdn.simpleicons.org/github/black" width="16" height="16">
+          </picture> <strong>GitHub: Mug Advanced Halftone</strong>
+        </a></li>
+      <li><a href="https://x.com/MugLab3">
+          <picture>
+            <source media="(prefers-color-scheme: dark)" srcset="https://cdn.simpleicons.org/x/white"><img
+              src="https://cdn.simpleicons.org/x/black" width="16" height="16">
+          </picture> <strong>X: @MugLab3</strong>
+        </a></li>
+    </ul>
+
+  </div>
+
+
+
+
+
+
+
+
+
+</body>
+
+</html>

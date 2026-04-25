@@ -138,10 +138,11 @@ See the [LICENSE](./LICENSE) file for details.
  
 ## 📜 Changelog
 
-### v3.01 (2026/04/25)
+### v3.02 (2026/04/25)
 - **Performance Optimization**: Optimized GPU computation and memory management to improve overall performance.
 - **Parameter Consolidation**: Unified redundant parameters like "Brightness Cutoff" into "Min Dot Radius" to simplify the UI.
 - **UI Improvement**: Refined parameter names such as "Staggered Grid" and "Background Color" for consistency, and updated the "About" section to be simpler and clearer.
+- **Default Value Adjustment**: Changed the initial values for Dot Color and Background Color to more versatile, neutral tones.
 
 ### v2.34 (2026/04/13)
 - **Mac Support**: Resolved an issue where the effect failed to build or render correctly on Mac.
