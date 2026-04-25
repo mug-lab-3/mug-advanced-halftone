@@ -4,7 +4,24 @@ Atom {
 	Author = "Mug",
 	Version = 3.02,
 	Date = {2026, 4, 25},
-	Description = [[<p>Mug Advanced Halftone is a powerful halftone generation plugin for DaVinci Resolve and Fusion. It allows you to create classic comic book styles, retro PC graphics, and artistic pixel art textures with high-performance GPU processing. Features include hexagonal grid patterns, customizable dot shapes (Circle, Square, Diamond, Line, Crosshatch), and organic jitter for a more natural look. It also supports RGB Shift and color palette limitations for authentic retro aesthetics.</p>
+	Description = [[<p>Mug Advanced Halftone is a halftone generation plugin for DaVinci Resolve and Fusion.</p>
+
+<p>It allows you to create vintage print effects, pop art styles, and retro PC graphics.</p>
+
+<p><b>Main Features:</b></p>
+<ul>
+  <li>Various grid layouts including hexagonal patterns</li>
+  <li>Customizable dot shapes (Circle, Square, Diamond, Line, Crosshatch)</li>
+  <li>Organic jitter for a more natural look</li>
+  <li>RGB Shift and color palette limitations for authentic retro aesthetics</li>
+</ul>
+
+<h3>How to use on the Edit Page:</h3>
+<ul>
+  <li>Open the Effects Library on the Edit page.</li>
+  <li>Navigate to <b>Toolbox &gt; Effects &gt; MugLab</b> and drag "MugAdvancedHalftone" onto your clip.</li>
+  <li>Adjust the parameters in the Inspector panel.</li>
+</ul>
 
 <h3>How to use in Fusion:</h3>
 <ul>
