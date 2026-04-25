@@ -110,7 +110,7 @@
 | | Color Reduction | カラーパレットの制限 |
 | | RGB Shift | 版ズレ・色収差の強さ |
 | | Dot Color | 指定色の設定 |
-| **Background** | Blend With Input | 元の画像に直接合成 |
+| **Background Color** | Blend With Input | 元の画像に直接合成 |
 | | Paper Color | 背景色（紙の色） |
 
 </details>
@@ -142,7 +142,7 @@
 ### v3.01 (2026/04/25)
 - **パフォーマンス最適化**: GPU演算とメモリ管理を最適化し、パフォーマンスを向上させました。
 - **パラメータの整理**: 重複していた「Brightness Cutoff」等の機能を「Min Dot Radius」に統合し、パラメータをシンプルにしました。
-- **UIの改善**: 「About」セクションの情報を整理し、見やすく更新しました。
+- **UIの改善**: 「About」セクションの情報の整理や、「Staggered Grid」「Background Color」などパラメータ名の一貫性の向上を行いました。
 
 ### v2.34 (2026/04/13)
 - **Mac環境への対応**: Macにおいてエフェクトが正常にビルド・表示されない問題を修正しました。

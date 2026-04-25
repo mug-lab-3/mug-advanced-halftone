@@ -110,7 +110,7 @@ To use this effect, place the following files in the specified folders for your 
 | | Color Reduction | Limit the color palette |
 | | RGB Shift | Strength of misregistration/chromatic aberration |
 | | Dot Color | Custom dot color setting |
-| **Background** | Blend With Input | Composite directly onto the original image |
+| **Background Color** | Blend With Input | Composite directly onto the original image |
 | | Paper Color | Background color (Paper color) |
 
 </details>
@@ -141,7 +141,7 @@ See the [LICENSE](./LICENSE) file for details.
 ### v3.01 (2026/04/25)
 - **Performance Optimization**: Optimized GPU computation and memory management to improve overall performance.
 - **Parameter Consolidation**: Unified redundant parameters like "Brightness Cutoff" into "Min Dot Radius" to simplify the UI.
-- **UI Improvement**: Updated the "About" section text to be simpler and clearer.
+- **UI Improvement**: Refined parameter names such as "Staggered Grid" and "Background Color" for consistency, and updated the "About" section to be simpler and clearer.
 
 ### v2.34 (2026/04/13)
 - **Mac Support**: Resolved an issue where the effect failed to build or render correctly on Mac.
