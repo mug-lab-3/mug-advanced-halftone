@@ -1437,15 +1437,17 @@ function Process(req)
         IMG_Width = cellGridNumX,
         IMG_Height = cellGridNumY,
         IMG_Depth = 8,
+        IMG_DeferAlloc = true,
     })
 
     local cellInfo2 = Image({
         IMG_Width = cellGridNumX,
         IMG_Height = cellGridNumY,
         IMG_Depth = 8,
+        IMG_DeferAlloc = true,
     })
 
-    local out = Image({ IMG_Like = img })
+    local out = Image({ IMG_Like = img, IMG_DeferAlloc = true })
 
     -- Execute kernel for cell information accumulation
     local cellInfoNode = DVIPComputeNode(req, "CellInfoKernel", CellInfoKernel, "CellInfoParams", CellInfoParams)
